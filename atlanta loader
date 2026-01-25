@@ -1643,15 +1643,6 @@ task.spawn(function()
         local fps = math.floor(1 / game:GetService("RunService").Heartbeat:Wait())
         local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
         
-        -- Get game name by place ID
-        local placeId = game.PlaceId
-        local gameName = "Unknown Game"
-        local success, result = pcall(function()
-            return game:GetService("MarketplaceService"):GetProductInfo(placeId)
-        end)
-        if success and result then
-            gameName = result.Name
-        end
         
         -- Get current user info
         local player = game:GetService("Players").LocalPlayer
@@ -1659,7 +1650,7 @@ task.spawn(function()
         local userId = player.UserId
         
         -- Update watermark text
-        watermark.change_text("kurumi.cc V1 | FPS: " .. fps .. " | Ping: " .. ping .. "ms | Game: " .. gameName .. " | " .. username .. " (" .. userId .. ")")
+        watermark.change_text("hoxj.cc | Prison life V1 | FPS: " .. fps .. " | Ping: " .. ping .. "ms | " .. username .. " (" .. userId .. ")")
     end 
 end)
 
