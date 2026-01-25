@@ -1634,7 +1634,7 @@
 				})
 
 local watermark = library:watermark({
-    default = "kurumi.cc V1 | Loading..."
+    default = "hoxj.cc | Prison life V1 | Loading..."
 })  
 
 task.spawn(function()
