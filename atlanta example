@@ -1,5 +1,4 @@
-local library, themes = https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/refs/heads/main/atlanta%20loader
-
+local library, themes = https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/refs/heads/main/atlanta%20loader.lua
 local dim2 = UDim2.new
 local hex = Color3.fromHex 
 
