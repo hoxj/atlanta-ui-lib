@@ -1771,8 +1771,13 @@ end)
 					end})
 					section:button_holder({})
 					section:button({name = "Load", callback = function()
-						library:load_config(readfile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg"))
-						library:notification({text = "Loaded Config: " .. flags["config_name_list"], time = 3})
+						local config_path = library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg"
+						if pcall(readfile, config_path) then
+							library:load_config(readfile(config_path))
+							library:notification({text = "Loaded Config: " .. flags["config_name_list"], time = 3})
+						else
+							library:notification({text = "Config file not found!", time = 3})
+						end
 					end})
 					section:button({name = "Save", callback = function()
 						writefile(library.directory .. "/configs/" .. flags["config_name_list"] .. ".cfg", library:get_config())
