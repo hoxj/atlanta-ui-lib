@@ -222,7 +222,7 @@
 		makefolder(library.directory .. path)
 	end 
 
-	writefile("arialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
+	writefile("arialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/ArialBold.ttf"))
 
 	local arialbold = {
 		name = "arialBold",
