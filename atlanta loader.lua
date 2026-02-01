@@ -236,10 +236,8 @@ local arialbold = {
     }
 }
 
--- Remove this line or save to a different file like "font_config.json"
- writefile("ArialBold.ttf", http_service:JSONEncode(arialbold))
-
-library.font = Font.new(getcustomasset("ArialBold.ttf"), Enum.FontWeight.Regular)
+-- Create the font using the family data
+library.font = Font.new(arialbold)
 
 	local config_holder 
 -- 
