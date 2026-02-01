@@ -224,8 +224,22 @@
 
 writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/ArialBold.ttf"))
 
--- Method 1: Direct path (simplest)
-library.font = Font.new(getcustomasset("ArialBold.ttf"))
+local arialbld = {
+    name = "ArialBold",
+    faces = {
+        {
+            name = "Regular",
+            weight = 400,
+            style = "normal",
+            assetId = getcustomasset("ArialBold.ttf")
+        }
+    }
+}
+
+-- Create font using the family data structure, not the JSON file
+library.font = Font.new(arialbld)
+
+
 	local config_holder 
 -- 
 -- library functions 
