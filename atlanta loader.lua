@@ -67,7 +67,6 @@
 	local concat = table.concat
 -- 
 
-local config_holder
 -- library init
 	local library = {
 		directory = "Atlanta",
@@ -237,13 +236,12 @@ local config_holder
 		}
 	}
 
-	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
+	writefile("arialbld.ttf", http_service:JSONEncode(tahoma))
 
-	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
+	library.font = Font.new(getcustomasset("arialbld.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder 
 -- 
-
 -- library functions 
 	-- misc functions
 		function library:hoverify(hover, parent) 
