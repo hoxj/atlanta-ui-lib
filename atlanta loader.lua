@@ -236,9 +236,9 @@
 		}
 	}
 
-	writefile("dddd.ttf", http_service:JSONEncode(arialbld))
+	writefile("arialbld.ttf", http_service:JSONEncode(arialbld))
 
-	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
+	library.font = Font.new(getcustomasset("arialbld.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder 
 -- 
