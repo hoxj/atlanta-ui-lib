@@ -236,11 +236,8 @@ local arialbld = {
     }
 }
 
--- Save the JSON to a .ttf file (even though it's JSON data)
-writefile("ArialBold-family.ttf", http_service:JSONEncode(arialbld))
-
--- Load the JSON-containing .ttf file
-library.font = Font.new(getcustomasset("ArialBold-family.ttf"), Enum.FontWeight.Regular)
+-- Don't save to file, just use the table directly
+library.font = Font.new(arialbld)
 
 	local config_holder 
 -- 
