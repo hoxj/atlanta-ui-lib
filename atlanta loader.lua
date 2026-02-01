@@ -69,7 +69,7 @@
 
 -- library init
 	local library = {
-		directory = "hoxj.cc | PrisonLife",
+		directory = "Atlanta",
 		folders = {
 			"/fonts",
 			"/configs",
