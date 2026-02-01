@@ -67,7 +67,7 @@
 	local concat = table.concat
 -- 
 -- font setup
-	writefile("arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/blob/main/arialbd.otf?raw=true"))
+	writefile("arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/blob/main/Arial%20Bold.ttf"))
 
 	local tahoma = {
 		name = "ArialBold",
