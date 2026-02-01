@@ -222,22 +222,23 @@
 		makefolder(library.directory .. path)
 	end 
 
-writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
+	writefile("ffff.ttf", game:HttpGet("https://github.com/weasely111/beta/raw/refs/heads/main/fs-tahoma-8px.ttf"))
 
-local arialbld = {
-    name = "ArialBold",
-    faces = {
-        {
-            name = "Regular",
-            weight = 400,
-            style = "normal",
-            assetId = getcustomasset("ArialBold.ttf")
-        }
-    }
-}
+	local tahoma = {
+		name = "SmallestPixel7",
+		faces = {
+			{
+				name = "Regular",
+				weight = 400,
+				style = "normal",
+				assetId = getcustomasset("ffff.ttf")
+			}
+		}
+	}
 
--- Don't save to file, just use the table directly
-library.font = Font.new(arialbld)
+	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
+
+	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder 
 -- 
