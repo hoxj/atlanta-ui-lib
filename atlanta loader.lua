@@ -224,7 +224,7 @@
 
 	writefile("arialbld.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
-	local tahoma = {
+	local arialbld = {
 		name = "ArialBold",
 		faces = {
 			{
