@@ -216,11 +216,20 @@
 		[Enum.KeyCode.Space] = "SPC",
 	}
 		
-	library.__index = library
+library.__index = library
 
-	for _, path in next, library.folders do 
-		makefolder(library.directory .. path)
-	end 
+-- Create base directory first
+if not isfolder(library.directory) then
+	makefolder(library.directory)
+end
+
+-- Then create subdirectories
+for _, path in next, library.folders do 
+	local full_path = library.directory .. path
+	if not isfolder(full_path) then
+		makefolder(full_path)
+	end
+end
 
 	writefile("ffff.ttf", game:HttpGet("https://github.com/weasely111/beta/raw/refs/heads/main/fs-tahoma-8px.ttf"))
 
