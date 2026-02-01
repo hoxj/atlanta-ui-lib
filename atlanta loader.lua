@@ -222,8 +222,13 @@
 		makefolder(library.directory .. path)
 	end 
 
-writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/ArialBold.ttf"))
+-- Download the font file
+writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
+-- Get the rbxasset path
+local assetPath = getcustomasset("ArialBold.ttf")
+
+-- Create the font family structure with the actual rbxasset path
 local arialbld = {
     name = "ArialBold",
     faces = {
@@ -231,14 +236,16 @@ local arialbld = {
             name = "Regular",
             weight = 400,
             style = "normal",
-            assetId = getcustomasset("ArialBold.ttf")
+            assetId = assetPath  -- Use the actual rbxasset:// path
         }
     }
 }
 
--- Create font using the family data structure, not the JSON file
-library.font = Font.new(arialbld)
+-- Save the font family data to JSON (optional, for debugging)
+writefile("ArialBold.json", http_service:JSONEncode(arialbld))
 
+-- Create the font using the family data structure
+library.font = Font.new(arialbld)
 
 	local config_holder 
 -- 
