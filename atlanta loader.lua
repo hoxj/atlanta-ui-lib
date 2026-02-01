@@ -180,6 +180,23 @@
 		}
 	}
 
+	writefile("Arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
+
+	local tahoma = {
+		name = "ArialBold",
+		faces = {
+			{
+				name = "Regular",
+				weight = 400,
+				style = "normal",
+				assetId = getcustomasset("Arialbold.ttf")
+			}
+		}
+	}
+
+	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
+	local library_font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
+
 	local keys = {
 		[Enum.KeyCode.LeftShift] = "LS",
 		[Enum.KeyCode.RightShift] = "RS",
