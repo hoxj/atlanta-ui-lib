@@ -222,9 +222,8 @@
 		makefolder(library.directory .. path)
 	end 
 
-	writefile("arialbld.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
-
-	library.font = Font.new(getcustomasset("arialbld.ttf"), Enum.FontWeight.Regular)
+pcall(function() writefile("arialbld.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf")) end)
+library.font = Font.new(getcustomasset("arialbld.ttf"))
 
 	local config_holder 
 -- 
