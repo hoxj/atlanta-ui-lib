@@ -222,14 +222,23 @@
 		makefolder(library.directory .. path)
 	end 
 
+	writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
-if not isfile("arialbld.ttf") then
-    writefile("arialbld.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
-end
+	local arialbld = {
+		name = "ArialBold",
+		faces = {
+			{
+				name = "Regular",
+				weight = 400,
+				style = "normal",
+				assetId = getcustomasset("ArialBold.ttf")
+			}
+		}
+	}
 
--- Ensure the font is registered as a Font object
--- Note: Do NOT overwrite arialbld.ttf with JSONEncode(arialbld)
-library.font = Font.new(getcustomasset("arialbld.ttf"), Enum.FontWeight.Regular)
+	writefile("ArialBold.ttf", http_service:JSONEncode(arialbld))
+
+	library.font = Font.new(getcustomasset("ArialBold.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder 
 -- 
