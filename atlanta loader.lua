@@ -67,42 +67,24 @@
 	local concat = table.concat
 -- 
 -- font setup
-	writefile("ffff.ttf", game:HttpGet("https://github.com/weasely111/beta/raw/refs/heads/main/fs-tahoma-8px.ttf"))
+	writefile("arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/blob/main/arialbd.otf?raw=true"))
 
 	local tahoma = {
-		name = "SmallestPixel7",
+		name = "ArialBold",
 		faces = {
 			{
 				name = "Regular",
 				weight = 400,
 				style = "normal",
-				assetId = getcustomasset("ffff.ttf")
+				assetId = getcustomasset("arialbold.ttf")
 			}
 		}
 	}
 
-	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
+	writefile("arialbold_data.ttf", http_service:JSONEncode(tahoma))
 
-	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
+	library.font = Font.new(getcustomasset("arialbold.ttf"), Enum.FontWeight.Regular)
 
-	-- Load BoldGerioVRegular font
-	writefile("boldgerio.ttf", game:HttpGet("https://github.com/weasely111/beta/raw/refs/heads/main/boldgerio-regular.ttf"))
-
-	local boldgerio = {
-		name = "BoldGerioVRegular",
-		faces = {
-			{
-				name = "Regular",
-				weight = 400,
-				style = "normal",
-				assetId = getcustomasset("boldgerio.ttf")
-			}
-		}
-	}
-
-	writefile("boldgerio_data.ttf", http_service:JSONEncode(boldgerio))
-
-	library.font = Font.new(getcustomasset("boldgerio_data.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder
 -- library init
