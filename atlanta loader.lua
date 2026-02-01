@@ -222,8 +222,23 @@
 		makefolder(library.directory .. path)
 	end 
 
-pcall(function() writefile("arialbld.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf")) end)
-library.font = Font.new(getcustomasset("arialbld.ttf"))
+	writefile("arialbld.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
+
+	local tahoma = {
+		name = "ArialBold",
+		faces = {
+			{
+				name = "Regular",
+				weight = 400,
+				style = "normal",
+				assetId = getcustomasset("arialbld.ttf")
+			}
+		}
+	}
+
+	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
+
+	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder 
 -- 
