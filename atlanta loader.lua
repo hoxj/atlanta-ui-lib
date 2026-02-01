@@ -5489,9 +5489,14 @@ end)
 				LineJoinMode = Enum.LineJoinMode.Miter
 			})
 
-			button.MouseButton1Click:Connect(function()
-				cfg.callback() 
-			end)
+section:button({name = "Unload Menu", callback = function()
+    if library.old_config then
+        library:load_config(library.old_config)
+    else
+        warn("No saved config to restore")
+        library:unload()
+    end
+end})
 
 			return setmetatable(cfg, library)
 		end 
