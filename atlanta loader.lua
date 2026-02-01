@@ -236,7 +236,7 @@
 		}
 	}
 
-	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
+	writefile("dddd.ttf", http_service:JSONEncode(arialbld))
 
 	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
 
