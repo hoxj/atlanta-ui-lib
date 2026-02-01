@@ -67,7 +67,7 @@
 	local concat = table.concat
 -- 
 -- font setup
-	writefile("arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/blob/main/Arial%20Bold.ttf"))
+	writefile("Arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
 	local tahoma = {
 		name = "ArialBold",
@@ -76,15 +76,14 @@
 				name = "Regular",
 				weight = 400,
 				style = "normal",
-				assetId = getcustomasset("arialbold.ttf")
+				assetId = getcustomasset("Arialbold.ttf")
 			}
 		}
 	}
 
-	writefile("arialbold_data.ttf", http_service:JSONEncode(tahoma))
+	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
 
-	library.font = Font.new(getcustomasset("arialbold.ttf"), Enum.FontWeight.Regular)
-
+	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder
 -- library init
