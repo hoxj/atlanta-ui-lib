@@ -473,8 +473,13 @@
 			return http_service:JSONEncode(Config)
 		end
 
-		function library:load_config(config_json) 
-			local config = http_service:JSONDecode(config_json)
+function library:load_config(config_json)
+    if not config_json or config_json == "" then
+        warn("Invalid config: config_json is nil or empty")
+        return
+    end
+    local config = http_service:JSONDecode(config_json)
+
 		
 			for _, v in next, config do 
 				local function_set = library.config_flags[_]
@@ -1787,10 +1792,14 @@ end)
 					section:button({name = "Refresh Configs", callback = function()
 						library:config_list_update()
 					end})
-					section:button_holder({})
-					section:button({name = "Unload Config", callback = function()
-						library:load_config(library.old_config)
-					end})
+section:button_holder({})
+section:button({name = "Unload Config", callback = function()
+    if library.old_config then
+        library:load_config(library.old_config)
+    else
+        warn("No saved config to restore")
+    end
+end})
 					section:button({name = "Unload Menu", callback = function()
 						library:load_config(library.old_config)
 
@@ -5489,14 +5498,9 @@ end)
 				LineJoinMode = Enum.LineJoinMode.Miter
 			})
 
-section:button({name = "Unload Menu", callback = function()
-    if library.old_config then
-        library:load_config(library.old_config)
-    else
-        warn("No saved config to restore")
-        library:unload()
-    end
-end})
+			button.MouseButton1Click:Connect(function()
+				cfg.callback() 
+			end)
 
 			return setmetatable(cfg, library)
 		end 
