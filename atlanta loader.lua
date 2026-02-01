@@ -224,21 +224,8 @@
 
 writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/ArialBold.ttf"))
 
-local arialbold = {
-    name = "ArialBold",
-    faces = {
-        {
-            name = "Regular",
-            weight = 400,
-            style = "normal",
-            assetId = getcustomasset("ArialBold.ttf")
-        }
-    }
-}
-
--- Create the font using the family data
-library.font = Font.new(arialbold)
-
+-- Method 1: Direct path (simplest)
+library.font = Font.new(getcustomasset("ArialBold.ttf"))
 	local config_holder 
 -- 
 -- library functions 
