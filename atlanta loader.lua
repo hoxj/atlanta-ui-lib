@@ -66,26 +66,8 @@
 	local remove = table.remove
 	local concat = table.concat
 -- 
--- font setup
-	writefile("Arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
-	local tahoma = {
-		name = "ArialBold",
-		faces = {
-			{
-				name = "Regular",
-				weight = 400,
-				style = "normal",
-				assetId = getcustomasset("Arialbold.ttf")
-			}
-		}
-	}
-
-	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
-
-	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
-
-	local config_holder
+local config_holder
 -- library init
 	local library = {
 		directory = "Atlanta",
@@ -180,23 +162,6 @@
 		}
 	}
 
-	writefile("Arialbold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
-
-	local tahoma = {
-		name = "ArialBold",
-		faces = {
-			{
-				name = "Regular",
-				weight = 400,
-				style = "normal",
-				assetId = getcustomasset("Arialbold.ttf")
-			}
-		}
-	}
-
-	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
-	local library_font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
-
 	local keys = {
 		[Enum.KeyCode.LeftShift] = "LS",
 		[Enum.KeyCode.RightShift] = "RS",
@@ -258,16 +223,16 @@
 		makefolder(library.directory .. path)
 	end 
 
-	writefile("ffff.ttf", game:HttpGet("https://github.com/weasely111/beta/raw/refs/heads/main/fs-tahoma-8px.ttf"))
+	writefile("arialbld.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
 	local tahoma = {
-		name = "SmallestPixel7",
+		name = "ArialBold",
 		faces = {
 			{
 				name = "Regular",
 				weight = 400,
 				style = "normal",
-				assetId = getcustomasset("ffff.ttf")
+				assetId = getcustomasset("arialbld.ttf")
 			}
 		}
 	}
