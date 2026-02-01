@@ -224,7 +224,7 @@
 
 	writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
-	local arialbld = {
+	local arialbold = {
 		name = "ArialBold",
 		faces = {
 			{
@@ -236,9 +236,9 @@
 		}
 	}
 
-	writefile("ArialBold.ttf", http_service:JSONEncode(arialbld))
+	writefile("ArialBold.json", http_service:JSONEncode(arialbld))
 
-	library.font = Font.new(getcustomasset("ArialBold.ttf"), Enum.FontWeight.Regular)
+	library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Regular)
 
 	local config_holder 
 -- 
