@@ -222,10 +222,10 @@
 		makefolder(library.directory .. path)
 	end 
 
-	writefile("ArialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
+	writefile("arialBold.ttf", game:HttpGet("https://github.com/hoxj/atlanta-ui-lib/raw/refs/heads/main/Arial%20Bold.ttf"))
 
 	local arialbold = {
-		name = "ArialBold",
+		name = "arialBold",
 		faces = {
 			{
 				name = "Regular",
@@ -236,9 +236,9 @@
 		}
 	}
 
-	writefile("ArialBold.json", http_service:JSONEncode(arialbld))
+	writefile("arialBold.ttf", http_service:JSONEncode(arialbld))
 
-	library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Regular)
+	library.font = Font.new(getcustomasset("arialBold.ttf"), Enum.FontWeight.Regular)
 
 	local config_holder 
 -- 
