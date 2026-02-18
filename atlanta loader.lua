@@ -1649,7 +1649,7 @@ task.spawn(function()
         local userId = player.UserId
         
         -- Update watermark text
-        watermark.change_text("hoxj.cc | Prison life V1 | FPS: " .. fps .. " | Ping: " .. ping .. "ms | " .. username .. " (" .. userId .. ")")
+        watermark.change_text("Beyond.hook | Private | Beta | Prison life V1 | FPS: " .. fps .. " | Ping: " .. ping .. "ms | " .. username .. " (" .. userId .. ")")
     end 
 end)
 
