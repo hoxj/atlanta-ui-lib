@@ -69,7 +69,7 @@
 
 -- library init
 	local library = {
-		directory = "hoxj.cc PL",
+		directory = "Beyond.hook PL",
 		folders = {
 			"/fonts",
 			"/configs",
@@ -1633,7 +1633,7 @@
 				})
 
 local watermark = library:watermark({
-    default = "hoxj.cc | Prison life V1 | Loading..."
+    default = "Beyond.hook | Prison life V1 | Loading..."
 })  
 
 task.spawn(function()
