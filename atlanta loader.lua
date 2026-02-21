@@ -5804,6 +5804,19 @@ end)
 				end
 				return 3
 			end
+			local function get_display_color(path)
+				if not path then return themes.preset.text end
+				if path.priority == "Enemy" and library.flags["ESP_Enemy_Color"] then
+					local f = library.flags["ESP_Enemy_Color"]
+					return type(f) == "table" and f.Color or f
+				end
+				if path.priority == "Friendly" and library.flags["ESP_Friendly_Color"] then
+					local f = library.flags["ESP_Friendly_Color"]
+					return type(f) == "table" and f.Color or f
+				end
+				if path.priority == "Priority" then return patterns["Priority"] end
+				return path.team_color or themes.preset.text
+			end
 			function cfg.create_player(player) 
 				library.playerlist_data[tostring(player)] = {}
 				local path = library.playerlist_data[tostring(player)]
@@ -6010,20 +6023,6 @@ end)
 				path = nil 
 			end 
 
-			local function get_display_color(path)
-				if not path then return themes.preset.text end
-				if path.priority == "Enemy" and library.flags["ESP_Enemy_Color"] then
-					local f = library.flags["ESP_Enemy_Color"]
-					return type(f) == "table" and f.Color or f
-				end
-				if path.priority == "Friendly" and library.flags["ESP_Friendly_Color"] then
-					local f = library.flags["ESP_Friendly_Color"]
-					return type(f) == "table" and f.Color or f
-				end
-				if path.priority == "Priority" then return patterns["Priority"] end
-				return path.team_color or themes.preset.text
-			end
-
 			function library.prioritize(text) 
 				if not library.selected_player then 
 					return 
@@ -6138,7 +6137,7 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-	
+
 			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
@@ -6155,7 +6154,6 @@ end)
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				VerticalAlignment = Enum.VerticalAlignment.Center
 			})
-	
 			local info_section = setmetatable({ holder = info_holder }, library)
 			cfg.labels.name = info_section:label({name = "Name: ??"})
 			cfg.labels.display = info_section:label({name = "Display Name: ??"})
