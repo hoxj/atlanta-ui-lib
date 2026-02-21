@@ -1845,7 +1845,23 @@ end)
 				end})
 				section:button_holder({})
 				section:button({name = "Set as target", callback = function()
-					if library.selected_player then library.current_target = library.selected_player end
+					if not library.selected_player then return end
+					if library.current_target == library.selected_player then
+						local playerName = library.current_target
+						local prev = library.target_previous_priority or "Neutral"
+						library.current_target = nil
+						library.target_previous_priority = nil
+						if playerName and library.set_priority_for_player then
+							library.set_priority_for_player(playerName, prev)
+						end
+					else
+						local path = library.playerlist_data[library.selected_player]
+						if path then
+							library.target_previous_priority = path.priority
+						end
+						library.current_target = library.selected_player
+						library.prioritize("Priority")
+					end
 				end})
 				section:button_holder({})
 				section:button({name = "View", callback = function()
@@ -1871,10 +1887,6 @@ end)
 						if myRoot and theirRoot then myRoot.CFrame = theirRoot.CFrame end
 					end
 				end})
-				section:button_holder({})
-				section:button({name = "Set Enemy", callback = function() if library.selected_player then library.prioritize("Enemy") end end})
-				section:button_holder({})
-				section:button({name = "Set Friendly", callback = function() if library.selected_player then library.prioritize("Friendly") end end})
 				section:button_holder({})
 				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
 				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = hex("23ff0a"), callback = function(c) end})
@@ -5624,6 +5636,31 @@ end)
 
 			local selected_button; 
 
+			-- Selected player icon (avatar headshot, like self HP / target HUD)
+			local selected_icon_frame = library:create("Frame", {
+				Parent = self.holder,
+				Name = "",
+				Size = dim2(0, 52, 0, 52),
+				Position = dim2(0, 0, 0, 0),
+				BorderSizePixel = 0,
+				BackgroundColor3 = themes.preset.outline,
+				LayoutOrder = 0
+			})
+			library:apply_theme(selected_icon_frame, "outline", "BackgroundColor3")
+			library:create("UIStroke", { Parent = selected_icon_frame, Name = "" })
+			local selected_icon = library:create("ImageLabel", {
+				Parent = selected_icon_frame,
+				Name = "",
+				Size = dim2(1, -4, 1, -4),
+				Position = dim2(0.5, 0, 0.5, 0),
+				AnchorPoint = vec2(0.5, 0.5),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				Image = "",
+				ScaleType = Enum.ScaleType.Fit
+			})
+			cfg.selected_icon = selected_icon
+
 			local patterns = {
 				["Priority"] = rgb(255, 255, 0),
 				["Enemy"] = rgb(255, 0, 0),
@@ -5647,7 +5684,8 @@ end)
 					AutomaticSize = Enum.AutomaticSize.Y,
 					TextYAlignment = Enum.TextYAlignment.Top,
 					TextSize = 12,
-					BackgroundColor3 = rgb(255, 255, 255)
+					BackgroundColor3 = rgb(255, 255, 255),
+					LayoutOrder = 1
 				})
 				
 				local UIPadding = library:create("UIPadding", {
@@ -5929,6 +5967,9 @@ end)
 					library.selected_player = player_name.Text
 					library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
 
+					if cfg.selected_icon and players[player_name.Text] then
+						cfg.selected_icon.Image = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", players[player_name.Text].UserId)
+					end
 					if cfg.labels.name then 
 						cfg.labels.name.set("User: " .. player_name.Text)
 						cfg.labels.display.set("DisplayName: " .. players[player_name.Text].DisplayName)
@@ -5969,6 +6010,15 @@ end)
 				path.priority_text.TextColor3 = patterns[text]
 				path.priority = text
 			end 
+
+			function library.set_priority_for_player(playerName, text)
+				local path = library.playerlist_data[playerName]
+				if path and patterns[text] then
+					path.priority = text
+					path.priority_text.Text = text
+					path.priority_text.TextColor3 = patterns[text]
+				end
+			end
 
 			function library.get_priority(player) 
 				local path = library.playerlist_data[tostring(player)]
