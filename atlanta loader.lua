@@ -6049,7 +6049,7 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-	
+
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
@@ -6133,11 +6133,11 @@ end)
 					if color then team_label.TextColor3 = color end
 				end
 			}
-	
+
 			local actions_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
-				Size = dim2(1, -220, 0, 0),
+				Size = dim2(1, -280, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1,
