@@ -5810,7 +5810,7 @@ end)
 				local playerObj = typeof(player) == "Instance" and player or players:FindFirstChild(tostring(player))
 				local nameStr = tostring(player)
 				local teamColor = get_team_color(playerObj)
-				if nameStr == lp.Name then teamColor = rgb(0, 0, 255) end
+				if nameStr == lp.Name then teamColor = rgb(255, 255, 255) end
 
 				local teamOrder = get_team_sort_order(playerObj)
 				local nameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
@@ -5954,8 +5954,8 @@ end)
 					local oldSelected = library.selected_player
 					if oldSelected then
 						local oldPath = library.playerlist_data[oldSelected]
-						if oldPath and oldPath.player_name and oldPath.team_color then
-							oldPath.player_name.TextColor3 = oldPath.team_color
+						if oldPath and oldPath.player_name then
+							oldPath.player_name.TextColor3 = get_display_color(oldPath)
 						end
 					end
 					selected_button = nil 
@@ -6010,6 +6010,20 @@ end)
 				path = nil 
 			end 
 
+			local function get_display_color(path)
+				if not path then return themes.preset.text end
+				if path.priority == "Enemy" and library.flags["ESP_Enemy_Color"] then
+					local f = library.flags["ESP_Enemy_Color"]
+					return type(f) == "table" and f.Color or f
+				end
+				if path.priority == "Friendly" and library.flags["ESP_Friendly_Color"] then
+					local f = library.flags["ESP_Friendly_Color"]
+					return type(f) == "table" and f.Color or f
+				end
+				if path.priority == "Priority" then return patterns["Priority"] end
+				return path.team_color or themes.preset.text
+			end
+
 			function library.prioritize(text) 
 				if not library.selected_player then 
 					return 
@@ -6019,6 +6033,9 @@ end)
 				path.priority_text.Text = text
 				path.priority_text.TextColor3 = patterns[text]
 				path.priority = text
+				if path.player_name and library.selected_player and selected_button ~= path.player_name then
+					path.player_name.TextColor3 = get_display_color(path)
+				end
 			end 
 
 			function library.set_priority_for_player(playerName, text)
@@ -6027,6 +6044,9 @@ end)
 					path.priority = text
 					path.priority_text.Text = text
 					path.priority_text.TextColor3 = patterns[text]
+					if path.player_name then
+						path.player_name.TextColor3 = get_display_color(path)
+					end
 				end
 			end
 
@@ -6118,11 +6138,11 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-
+	
 			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
-				Size = dim2(0, 140, 0, 0),
+				Size = dim2(0, 215, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1,
@@ -6135,6 +6155,7 @@ end)
 				SortOrder = Enum.SortOrder.LayoutOrder,
 				VerticalAlignment = Enum.VerticalAlignment.Center
 			})
+	
 			local info_section = setmetatable({ holder = info_holder }, library)
 			cfg.labels.name = info_section:label({name = "Name: ??"})
 			cfg.labels.display = info_section:label({name = "Display Name: ??"})
@@ -6164,11 +6185,16 @@ end)
 			local actions_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
-				Size = dim2(1, -280, 0, 0),
+				Size = dim2(1, -305, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1,
 				LayoutOrder = 2
+			})
+			library:create("UIPadding", {
+				Parent = actions_holder,
+				Name = "",
+				PaddingLeft = dim(0, 28)
 			})
 			library:create("UIListLayout", {
 				Parent = actions_holder,
