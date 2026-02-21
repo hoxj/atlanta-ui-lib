@@ -5636,31 +5636,6 @@ end)
 
 			local selected_button; 
 
-			-- Selected player icon (avatar headshot, like self HP / target HUD)
-			local selected_icon_frame = library:create("Frame", {
-				Parent = self.holder,
-				Name = "",
-				Size = dim2(0, 52, 0, 52),
-				Position = dim2(0, 0, 0, 0),
-				BorderSizePixel = 0,
-				BackgroundColor3 = themes.preset.outline,
-				LayoutOrder = 0
-			})
-			library:apply_theme(selected_icon_frame, "outline", "BackgroundColor3")
-			library:create("UIStroke", { Parent = selected_icon_frame, Name = "" })
-			local selected_icon = library:create("ImageLabel", {
-				Parent = selected_icon_frame,
-				Name = "",
-				Size = dim2(1, -4, 1, -4),
-				Position = dim2(0.5, 0, 0.5, 0),
-				AnchorPoint = vec2(0.5, 0.5),
-				BorderSizePixel = 0,
-				BackgroundTransparency = 1,
-				Image = "",
-				ScaleType = Enum.ScaleType.Fit
-			})
-			cfg.selected_icon = selected_icon
-
 			local patterns = {
 				["Priority"] = rgb(255, 255, 0),
 				["Enemy"] = rgb(255, 0, 0),
@@ -5668,7 +5643,7 @@ end)
 				["Friendly"] = rgb(0, 255, 255)
 			}
 
-			-- elements 
+			-- elements: player list at top first
 				local playerlist_holder = library:create("TextLabel", {
 					Parent = self.holder,
 					Name = "",
@@ -5685,7 +5660,7 @@ end)
 					TextYAlignment = Enum.TextYAlignment.Top,
 					TextSize = 12,
 					BackgroundColor3 = rgb(255, 255, 255),
-					LayoutOrder = 1
+					LayoutOrder = 0
 				})
 				
 				local UIPadding = library:create("UIPadding", {
@@ -5809,6 +5784,44 @@ end)
 					SortOrder = Enum.SortOrder.LayoutOrder
 				})
 			-- 
+
+			-- Row: selected player icon on left (transparent, slightly bigger), then actions go right of it in section
+			local icon_row = library:create("Frame", {
+				Parent = self.holder,
+				Name = "",
+				Size = dim2(1, 0, 0, 72),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				LayoutOrder = 1
+			})
+			library:create("UIListLayout", {
+				Parent = icon_row,
+				Name = "",
+				FillDirection = Enum.FillDirection.Horizontal,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				Padding = dim(0, 8),
+				SortOrder = Enum.SortOrder.LayoutOrder
+			})
+			local selected_icon_frame = library:create("Frame", {
+				Parent = icon_row,
+				Name = "",
+				Size = dim2(0, 68, 0, 68),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				LayoutOrder = 0
+			})
+			local selected_icon = library:create("ImageLabel", {
+				Parent = selected_icon_frame,
+				Name = "",
+				Size = dim2(1, 0, 1, 0),
+				Position = dim2(0.5, 0, 0.5, 0),
+				AnchorPoint = vec2(0.5, 0.5),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				Image = "",
+				ScaleType = Enum.ScaleType.Fit
+			})
+			cfg.selected_icon = selected_icon
 
 			local team_colors = { inmates = rgb(255, 200, 100), guards = rgb(100, 150, 255), criminals = rgb(255, 100, 100), prisoners = rgb(255, 200, 100) }
 			local function get_team_color(playerObj)
