@@ -1839,7 +1839,9 @@ end)
 
 				local column = setmetatable(items, library):column() 
 				local section = column:section({name = "Playerlist"})
+				local main_holder = section.holder
 				local playerlist = section:playerlist({})
+				section.holder = playerlist.actions_holder
 				section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
 					library.prioritize(text)
 				end})
@@ -1887,6 +1889,7 @@ end)
 						if myRoot and theirRoot then myRoot.CFrame = theirRoot.CFrame end
 					end
 				end})
+				section.holder = main_holder
 				section:button_holder({})
 				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
 				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = hex("23ff0a"), callback = function(c) end})
@@ -6018,7 +6021,8 @@ end)
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
-				Size = dim2(1, 0, 0, 72),
+				Size = dim2(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1
 			})
@@ -6032,7 +6036,7 @@ end)
 				Name = "",
 				FillDirection = Enum.FillDirection.Horizontal,
 				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = dim(0, 8),
+				Padding = dim(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder
 			})
 			local selected_icon_frame = library:create("Frame", {
@@ -6055,6 +6059,24 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
+			-- action holder
+			local actions_holder = library:create("Frame", {
+				Parent = icon_row,
+				Name = "",
+				Size = dim2(1, -82, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				LayoutOrder = 1
+			})
+			library:create("UIListLayout", {
+				Parent = actions_holder,
+				Name = "",
+				Padding = dim(0, 2),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center
+			})
+			cfg.actions_holder = actions_holder
 			cfg.labels.name = self:label({name = "Name: ??"})
 			cfg.labels.display = self:label({name = "Display Name: ??"})
 			cfg.labels.uid = self:label({name = "User Id: ??"})
