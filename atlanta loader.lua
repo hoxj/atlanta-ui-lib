@@ -5643,7 +5643,7 @@ end)
 				["Priority"] = rgb(255, 255, 0),
 				["Enemy"] = rgb(255, 0, 0),
 				["Neutral"] = themes.preset.text,
-				["Friendly"] = rgb(0, 255, 255)
+				["Friendly"] = hex("23ff0a")
 			}
 
 			-- elements: player list at top first
@@ -5889,7 +5889,7 @@ end)
 					Parent = TextButton,
 					Name = "",
 					FontFace = library.font,
-					TextColor3 = tostring(player) ~= lp.Name and themes.preset.text or rgb(0, 0, 255),
+					TextColor3 = tostring(player) ~= lp.Name and themes.preset.text or rgb(255, 255, 255),
 					BorderColor3 = rgb(0, 0, 0),
 					Text = tostring(player) ~= lp.Name and "Neutral" or "LocalPlayer",
 					BackgroundTransparency = 1,
