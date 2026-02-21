@@ -5785,44 +5785,6 @@ end)
 				})
 			-- 
 
-			-- Row: selected player icon on left (transparent, slightly bigger), then actions go right of it in section
-			local icon_row = library:create("Frame", {
-				Parent = self.holder,
-				Name = "",
-				Size = dim2(1, 0, 0, 72),
-				BorderSizePixel = 0,
-				BackgroundTransparency = 1,
-				LayoutOrder = 1
-			})
-			library:create("UIListLayout", {
-				Parent = icon_row,
-				Name = "",
-				FillDirection = Enum.FillDirection.Horizontal,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-				Padding = dim(0, 8),
-				SortOrder = Enum.SortOrder.LayoutOrder
-			})
-			local selected_icon_frame = library:create("Frame", {
-				Parent = icon_row,
-				Name = "",
-				Size = dim2(0, 68, 0, 68),
-				BorderSizePixel = 0,
-				BackgroundTransparency = 1,
-				LayoutOrder = 0
-			})
-			local selected_icon = library:create("ImageLabel", {
-				Parent = selected_icon_frame,
-				Name = "",
-				Size = dim2(1, 0, 1, 0),
-				Position = dim2(0.5, 0, 0.5, 0),
-				AnchorPoint = vec2(0.5, 0.5),
-				BorderSizePixel = 0,
-				BackgroundTransparency = 1,
-				Image = "",
-				ScaleType = Enum.ScaleType.Fit
-			})
-			cfg.selected_icon = selected_icon
-
 			local team_colors = { inmates = rgb(255, 200, 100), guards = rgb(100, 150, 255), criminals = rgb(255, 100, 100), prisoners = rgb(255, 200, 100) }
 			local function get_team_color(playerObj)
 				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return themes.preset.text end
@@ -6052,6 +6014,42 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
+			-- Selected player icon below search box (transparent, left)
+			local icon_row = library:create("Frame", {
+				Parent = self.holder,
+				Name = "",
+				Size = dim2(1, 0, 0, 72),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1
+			})
+			library:create("UIListLayout", {
+				Parent = icon_row,
+				Name = "",
+				FillDirection = Enum.FillDirection.Horizontal,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				Padding = dim(0, 8),
+				SortOrder = Enum.SortOrder.LayoutOrder
+			})
+			local selected_icon_frame = library:create("Frame", {
+				Parent = icon_row,
+				Name = "",
+				Size = dim2(0, 68, 0, 68),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				LayoutOrder = 0
+			})
+			local selected_icon = library:create("ImageLabel", {
+				Parent = selected_icon_frame,
+				Name = "",
+				Size = dim2(1, 0, 1, 0),
+				Position = dim2(0.5, 0, 0.5, 0),
+				AnchorPoint = vec2(0.5, 0.5),
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				Image = "",
+				ScaleType = Enum.ScaleType.Fit
+			})
+			cfg.selected_icon = selected_icon
 			cfg.labels.name = self:label({name = "Name: ??"})
 			cfg.labels.display = self:label({name = "Display Name: ??"})
 			cfg.labels.uid = self:label({name = "User Id: ??"})
