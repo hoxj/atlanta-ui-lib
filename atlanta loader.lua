@@ -5944,12 +5944,12 @@ end)
 				path.team_color = teamColor
 				if playerObj then
 					playerObj:GetPropertyChangedSignal("Team"):Connect(function()
+						if nameStr == lp.Name then return end
 						local newColor = get_team_color(playerObj)
 						path.team_color = newColor
 						if selected_button ~= player_name then
 							player_name.TextColor3 = newColor
 						end
-						if nameStr == lp.Name then return end
 						local newOrder = get_team_sort_order(playerObj)
 						local newNameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
 						local newLayoutOrder = newOrder * 100000 + newNameSort
@@ -6068,7 +6068,7 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-
+		
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
@@ -6090,7 +6090,7 @@ end)
 				Padding = dim(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder
 			})
-
+		
 			local icon_outer_frame = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
@@ -6137,7 +6137,7 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-
+		
 			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
