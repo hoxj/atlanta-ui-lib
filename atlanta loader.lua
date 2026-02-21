@@ -1843,11 +1843,11 @@ end)
 				section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
 					library.prioritize(text)
 				end})
+				section:button_holder({})
 				section:button({name = "Set as target", callback = function()
 					if library.selected_player then library.current_target = library.selected_player end
 				end})
-				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = rgb(255, 0, 0), callback = function(c) end})
-				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = rgb(0, 255, 255), callback = function(c) end})
+				section:button_holder({})
 				section:button({name = "View", callback = function()
 					if not library.selected_player then return end
 					local p = players:FindFirstChild(library.selected_player)
@@ -1861,6 +1861,7 @@ end)
 						if h then ws.CurrentCamera.CameraSubject = h library.viewing_player = library.selected_player end
 					end
 				end})
+				section:button_holder({})
 				section:button({name = "Teleport", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
@@ -1870,8 +1871,13 @@ end)
 						if myRoot and theirRoot then myRoot.CFrame = theirRoot.CFrame end
 					end
 				end})
+				section:button_holder({})
 				section:button({name = "Set Enemy", callback = function() if library.selected_player then library.prioritize("Enemy") end end})
+				section:button_holder({})
 				section:button({name = "Set Friendly", callback = function() if library.selected_player then library.prioritize("Friendly") end end})
+				section:button_holder({})
+				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
+				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = hex("23ff0a"), callback = function(c) end})
 			--  
 
 			return setmetatable(window, library)
@@ -5766,16 +5772,18 @@ end)
 				})
 			-- 
 
-			local team_colors = { Inmates = rgb(255, 200, 100), Guards = rgb(100, 150, 255), Criminals = rgb(255, 100, 100) }
+			local team_colors = { inmates = rgb(255, 200, 100), guards = rgb(100, 150, 255), criminals = rgb(255, 100, 100), prisoners = rgb(255, 200, 100) }
+			local function get_team_color(playerObj)
+				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return themes.preset.text end
+				local key = playerObj.Team.Name:lower():gsub("%s+", "")
+				return team_colors[key] or themes.preset.text
+			end
 			function cfg.create_player(player) 
 				library.playerlist_data[tostring(player)] = {}
 				local path = library.playerlist_data[tostring(player)]
 				local playerObj = typeof(player) == "Instance" and player or players:FindFirstChild(tostring(player))
 				local nameStr = tostring(player)
-				local teamColor = themes.preset.text
-				if playerObj and playerObj.Team and playerObj.Team.Name then
-					teamColor = team_colors[playerObj.Team.Name] or themes.preset.text
-				end
+				local teamColor = get_team_color(playerObj)
 				if nameStr == lp.Name then teamColor = rgb(0, 0, 255) end
 
 				local TextButton = library:create("TextButton", {
@@ -5890,6 +5898,15 @@ end)
 				path.priority_text = priority_text
 				path.player_name = player_name
 				path.team_color = teamColor
+				if playerObj then
+					playerObj:GetPropertyChangedSignal("Team"):Connect(function()
+						local newColor = get_team_color(playerObj)
+						path.team_color = newColor
+						if selected_button ~= player_name then
+							player_name.TextColor3 = newColor
+						end
+					end)
+				end
 				-- library.selected_player = players[tostring(player)]
 				
 				TextButton.MouseButton1Click:Connect(function()
