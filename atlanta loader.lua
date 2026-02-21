@@ -5794,6 +5794,16 @@ end)
 				local key = playerObj.Team.Name:lower():gsub("%s+", "")
 				return team_colors[key] or themes.preset.text
 			end
+			-- Sort order: Guards first (0), then Inmates (1), then Criminals (2), then others (3)
+			local function get_team_sort_order(playerObj)
+				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return 3 end
+				local key = playerObj.Team.Name:lower():gsub("%s+", "")
+				if key == "guards" then return 0
+				elseif key == "inmates" or key == "prisoners" then return 1
+				elseif key == "criminals" then return 2
+				end
+				return 3
+			end
 			function cfg.create_player(player) 
 				library.playerlist_data[tostring(player)] = {}
 				local path = library.playerlist_data[tostring(player)]
@@ -5802,6 +5812,9 @@ end)
 				local teamColor = get_team_color(playerObj)
 				if nameStr == lp.Name then teamColor = rgb(0, 0, 255) end
 
+				local teamOrder = get_team_sort_order(playerObj)
+				local nameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
+				local layoutOrder = teamOrder * 100000 + nameSort
 				local TextButton = library:create("TextButton", {
 					Parent = ScrollingFrame,
 					Name = "",
@@ -5814,7 +5827,8 @@ end)
 					BorderSizePixel = 0,
 					AutomaticSize = Enum.AutomaticSize.Y,
 					TextSize = 12,
-					BackgroundColor3 = rgb(255, 255, 255)
+					BackgroundColor3 = rgb(255, 255, 255),
+					LayoutOrder = layoutOrder
 				})
 
 				local player_name = library:create("TextLabel", {
@@ -5905,7 +5919,8 @@ end)
 					BorderColor3 = rgb(0, 0, 0),
 					Size = dim2(1, 0, 0, 1),
 					BorderSizePixel = 0,
-					BackgroundColor3 = themes.preset.outline
+					BackgroundColor3 = themes.preset.outline,
+					LayoutOrder = layoutOrder + 0.5
 				}) library:apply_theme(main_holder, "outline", "BackgroundColor3") 
 
 				path.instance = TextButton 
@@ -5921,6 +5936,11 @@ end)
 						if selected_button ~= player_name then
 							player_name.TextColor3 = newColor
 						end
+						local newOrder = get_team_sort_order(playerObj)
+						local newNameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
+						local newLayoutOrder = newOrder * 100000 + newNameSort
+						TextButton.LayoutOrder = newLayoutOrder
+						line.LayoutOrder = newLayoutOrder + 0.5
 					end)
 				end
 				-- library.selected_player = players[tostring(player)]
@@ -6059,7 +6079,7 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-			-- action holder
+			-- actions_holder
 			local actions_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
