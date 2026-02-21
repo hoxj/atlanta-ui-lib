@@ -5814,7 +5814,7 @@ end)
 
 				local teamOrder = get_team_sort_order(playerObj)
 				local nameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
-				local layoutOrder = teamOrder * 100000 + nameSort
+				local layoutOrder = (nameStr == lp.Name) and -1000000 or (teamOrder * 100000 + nameSort)
 				local TextButton = library:create("TextButton", {
 					Parent = ScrollingFrame,
 					Name = "",
@@ -5936,6 +5936,7 @@ end)
 						if selected_button ~= player_name then
 							player_name.TextColor3 = newColor
 						end
+						if nameStr == lp.Name then return end
 						local newOrder = get_team_sort_order(playerObj)
 						local newNameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
 						local newLayoutOrder = newOrder * 100000 + newNameSort
@@ -6037,7 +6038,7 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-			-- selected player icon
+
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
@@ -6079,7 +6080,7 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-			-- actions_holder
+
 			local actions_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
