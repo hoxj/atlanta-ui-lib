@@ -5974,6 +5974,17 @@ end)
 						cfg.labels.display.set("DisplayName: " .. players[player_name.Text].DisplayName)
 						cfg.labels.uid.set("User Id: " .. players[player_name.Text].UserId)
 					end
+					if cfg.labels.team then
+						local p = players[player_name.Text]
+						local teamDisplay = "Team: --"
+						local teamColor = themes.preset.text
+						if p and p.Team and p.Team.Name then
+							local key = p.Team.Name:lower():gsub("%s+", "")
+							teamDisplay = (key == "guards" and "Team: Guard") or (key == "inmates" or key == "prisoners") and "Team: Inmate" or (key == "criminals" and "Team: Criminal") or ("Team: " .. p.Team.Name)
+							teamColor = path.team_color
+						end
+						cfg.labels.team.set(teamDisplay, teamColor)
+					end
 				end)
 
 				return path 
@@ -6038,7 +6049,7 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-
+	
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
@@ -6081,14 +6092,56 @@ end)
 			})
 			cfg.selected_icon = selected_icon
 
-			local actions_holder = library:create("Frame", {
+			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
-				Size = dim2(1, -82, 0, 0),
+				Size = dim2(0, 140, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1,
 				LayoutOrder = 1
+			})
+			library:create("UIListLayout", {
+				Parent = info_holder,
+				Name = "",
+				Padding = dim(0, 1),
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center
+			})
+			local info_section = setmetatable({ holder = info_holder }, library)
+			cfg.labels.name = info_section:label({name = "Name: ??"})
+			cfg.labels.display = info_section:label({name = "Display Name: ??"})
+			cfg.labels.uid = info_section:label({name = "User Id: ??"})
+			local team_label = library:create("TextLabel", {
+				Parent = info_holder,
+				Name = "",
+				FontFace = library.font,
+				TextColor3 = themes.preset.text,
+				BorderColor3 = rgb(0, 0, 0),
+				Text = "Team: --",
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				AutomaticSize = Enum.AutomaticSize.Y,
+				TextSize = 12,
+				LayoutOrder = 4,
+				BackgroundColor3 = rgb(255, 255, 255)
+			})
+			cfg.labels.team = {
+				set = function(text, color)
+					team_label.Text = text or "Team: --"
+					if color then team_label.TextColor3 = color end
+				end
+			}
+	
+			local actions_holder = library:create("Frame", {
+				Parent = icon_row,
+				Name = "",
+				Size = dim2(1, -220, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BorderSizePixel = 0,
+				BackgroundTransparency = 1,
+				LayoutOrder = 2
 			})
 			library:create("UIListLayout", {
 				Parent = actions_holder,
@@ -6098,9 +6151,6 @@ end)
 				VerticalAlignment = Enum.VerticalAlignment.Center
 			})
 			cfg.actions_holder = actions_holder
-			cfg.labels.name = self:label({name = "Name: ??"})
-			cfg.labels.display = self:label({name = "Display Name: ??"})
-			cfg.labels.uid = self:label({name = "User Id: ??"})
 
 			return setmetatable(cfg, library)
 		end 
