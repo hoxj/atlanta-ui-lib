@@ -82,6 +82,8 @@
 		connections = {},   
 		notifications = {},
 		playerlist_data = {},
+		viewing_player = nil,
+		current_target = nil,
 
 		current_tab, 
 		current_element_open, 
@@ -439,9 +441,12 @@
 		end
 
 		function library:tween(obj, properties) 
-			local tween = tween_service:Create(obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, 0, false, 0), properties):Play()
-				
-			return tween
+			if not obj or typeof(obj) ~= "Instance" or not obj.Parent then return nil end
+			local ok, tween = pcall(function()
+				return tween_service:Create(obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, 0, false, 0), properties)
+			end)
+			if ok and tween then tween:Play() return tween end
+			return nil
 		end 
 
 		function library:config_list_update() 
@@ -1838,6 +1843,35 @@ end)
 				section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
 					library.prioritize(text)
 				end})
+				section:button({name = "Set as target", callback = function()
+					if library.selected_player then library.current_target = library.selected_player end
+				end})
+				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = rgb(255, 0, 0), callback = function(c) end})
+				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = rgb(0, 255, 255), callback = function(c) end})
+				section:button({name = "View", callback = function()
+					if not library.selected_player then return end
+					local p = players:FindFirstChild(library.selected_player)
+					if library.viewing_player == library.selected_player then
+						library.viewing_player = nil
+						if lp.Character then local h = lp.Character:FindFirstChildOfClass("Humanoid") if h then ws.CurrentCamera.CameraSubject = h end end
+						return
+					end
+					if p and p.Character then
+						local h = p.Character:FindFirstChildOfClass("Humanoid")
+						if h then ws.CurrentCamera.CameraSubject = h library.viewing_player = library.selected_player end
+					end
+				end})
+				section:button({name = "Teleport", callback = function()
+					if not library.selected_player or not lp.Character then return end
+					local p = players:FindFirstChild(library.selected_player)
+					if p and p.Character then
+						local myRoot = lp.Character:FindFirstChild("HumanoidRootPart")
+						local theirRoot = p.Character:FindFirstChild("HumanoidRootPart")
+						if myRoot and theirRoot then myRoot.CFrame = theirRoot.CFrame end
+					end
+				end})
+				section:button({name = "Set Enemy", callback = function() if library.selected_player then library.prioritize("Enemy") end end})
+				section:button({name = "Set Friendly", callback = function() if library.selected_player then library.prioritize("Friendly") end end})
 			--  
 
 			return setmetatable(window, library)
@@ -4358,23 +4392,14 @@ end)
 						active = cfg.active
 					}
 					
-					if cfg.name then 
+					if cfg.name and KEYBIND_ELEMENT and KEYBIND_ELEMENT.Parent then 
 						KEYBIND_ELEMENT.Visible = cfg.active
-
-						library:tween(KEYBIND_ELEMENT, {
-							TextTransparency = cfg.active and 0 or 1, 
-						}) 
-
-						library:tween(KEYBIND_ELEMENT:FindFirstChildOfClass("UIStroke"), {
-							Transparency = cfg.active and 0 or 1, 
-						}) 
-						
+						library:tween(KEYBIND_ELEMENT, { TextTransparency = cfg.active and 0 or 1 })
+						local stroke = KEYBIND_ELEMENT:FindFirstChildOfClass("UIStroke")
+						if stroke then library:tween(stroke, { Transparency = cfg.active and 0 or 1 }) end
 						local text = tostring(cfg.key) ~= "Enums" and (keys[cfg.key] or tostring(cfg.key):gsub("Enum.", "")) or nil
 						local __text = text and (tostring(text):gsub("KeyCode.", ""):gsub("UserInputType.", ""))
-
-						if cfg.name then 
-							KEYBIND_ELEMENT.Text = "[ " .. string.upper(string.sub(cfg.mode, 1, 1)) .. string.sub(cfg.mode, 2) .. " ] " .. cfg.name .. " - " .. __text
-						end
+						KEYBIND_ELEMENT.Text = "[ " .. string.upper(string.sub(cfg.mode, 1, 1)) .. string.sub(cfg.mode, 2) .. " ] " .. cfg.name .. " - " .. (__text or "none")
 					end
 				end
 
@@ -5741,10 +5766,18 @@ end)
 				})
 			-- 
 
+			local team_colors = { Inmates = rgb(255, 200, 100), Guards = rgb(100, 150, 255), Criminals = rgb(255, 100, 100) }
 			function cfg.create_player(player) 
 				library.playerlist_data[tostring(player)] = {}
 				local path = library.playerlist_data[tostring(player)]
-				
+				local playerObj = typeof(player) == "Instance" and player or players:FindFirstChild(tostring(player))
+				local nameStr = tostring(player)
+				local teamColor = themes.preset.text
+				if playerObj and playerObj.Team and playerObj.Team.Name then
+					teamColor = team_colors[playerObj.Team.Name] or themes.preset.text
+				end
+				if nameStr == lp.Name then teamColor = rgb(0, 0, 255) end
+
 				local TextButton = library:create("TextButton", {
 					Parent = ScrollingFrame,
 					Name = "",
@@ -5763,9 +5796,9 @@ end)
 				local player_name = library:create("TextLabel", {
 					Parent = TextButton,
 					FontFace = library.font,
-					TextColor3 = themes.preset.text,
+					TextColor3 = teamColor,
 					BorderColor3 = rgb(0, 0, 0),
-					Text = tostring(player),
+					Text = nameStr,
 					BorderSizePixel = 0,
 					BackgroundTransparency = 1,
 					TextXAlignment = Enum.TextXAlignment.Left,
@@ -5774,9 +5807,7 @@ end)
 					TextSize = 12,
 					LayoutOrder = -100, 
 					BackgroundColor3 = rgb(255, 255, 255)
-				})
-				library:apply_theme(player_name, "text", "TextColor3") 
-				library:apply_theme(player_name, "accent", "TextColor3") 
+				}) 
 								
 				-- local TextLabel = library:create("TextLabel", {
 				--     Parent = TextButton,
@@ -5857,17 +5888,23 @@ end)
 				path.line = line 
 				path.priority = "Neutral"
 				path.priority_text = priority_text
+				path.player_name = player_name
+				path.team_color = teamColor
 				-- library.selected_player = players[tostring(player)]
 				
 				TextButton.MouseButton1Click:Connect(function()
-					if player_name == lp.Name then 
+					if nameStr == lp.Name then 
 						return 
 					end 
 
-					if selected_button then 
-						selected_button.TextColor3 = themes.preset.text 
-						selected_button = nil 
-					end     
+					local oldSelected = library.selected_player
+					if oldSelected then
+						local oldPath = library.playerlist_data[oldSelected]
+						if oldPath and oldPath.player_name and oldPath.team_color then
+							oldPath.player_name.TextColor3 = oldPath.team_color
+						end
+					end
+					selected_button = nil 
 
 					selected_button = player_name 
 					player_name.TextColor3 = themes.preset.accent 
