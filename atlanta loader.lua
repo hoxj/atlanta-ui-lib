@@ -6014,13 +6014,18 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-			-- Selected player icon below search box (transparent, left)
+			-- selected player icon
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
 				Size = dim2(1, 0, 0, 72),
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1
+			})
+			library:create("UIPadding", {
+				Parent = icon_row,
+				Name = "",
+				PaddingLeft = dim(0, 14)
 			})
 			library:create("UIListLayout", {
 				Parent = icon_row,
