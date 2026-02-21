@@ -6071,16 +6071,43 @@ end)
 				Padding = dim(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder
 			})
-			local selected_icon_frame = library:create("Frame", {
+
+			local icon_outer_frame = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
 				Size = dim2(0, 68, 0, 68),
 				BorderSizePixel = 0,
-				BackgroundTransparency = 1,
+				BackgroundColor3 = rgb(10, 10, 10),
+				BorderColor3 = rgb(0, 0, 0),
 				LayoutOrder = 0
 			})
+			local icon_inner_frame = library:create("Frame", {
+				Parent = icon_outer_frame,
+				Name = "",
+				Position = dim2(0, 1, 0, 1),
+				Size = dim2(1, -2, 1, -2),
+				BorderSizePixel = 0,
+				BackgroundColor3 = rgb(45, 45, 45)
+			})
+			local icon_inner_frame2 = library:create("Frame", {
+				Parent = icon_inner_frame,
+				Name = "",
+				Position = dim2(0, 1, 0, 1),
+				Size = dim2(1, -2, 1, -2),
+				BorderSizePixel = 0,
+				BackgroundColor3 = rgb(255, 255, 255)
+			})
+			local icon_gradient = library:create("UIGradient", {
+				Parent = icon_inner_frame2,
+				Name = "",
+				Rotation = 90,
+				Color = rgbseq{
+					rgbkey(0, rgb(30, 30, 30)),
+					rgbkey(1, rgb(20, 20, 20))
+				}
+			})
 			local selected_icon = library:create("ImageLabel", {
-				Parent = selected_icon_frame,
+				Parent = icon_inner_frame2,
 				Name = "",
 				Size = dim2(1, 0, 1, 0),
 				Position = dim2(0.5, 0, 0.5, 0),
@@ -6148,7 +6175,8 @@ end)
 				Name = "",
 				Padding = dim(0, 2),
 				SortOrder = Enum.SortOrder.LayoutOrder,
-				VerticalAlignment = Enum.VerticalAlignment.Center
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				HorizontalAlignment = Enum.HorizontalAlignment.Right
 			})
 			cfg.actions_holder = actions_holder
 
