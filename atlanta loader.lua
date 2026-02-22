@@ -2321,7 +2321,7 @@ end)
 						AnchorPoint = vec2(1, 0);
 						Parent = objects[ "holder" ];
 						Name = "\0";
-						Position = dim2(0, -5, 0, 0);
+						Position = dim2(0, -8, 0, 0);
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(0, 4, 1, 0);
 						BorderSizePixel = 0;
@@ -2355,10 +2355,10 @@ end)
 					TextColor3 = flag_color("esp_healthtext_color");
 					Text = "100";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(0.5, 0.5);
-					Size = dim2(0, 24, 0, 14);
+					AnchorPoint = vec2(1, 0.5);
+					Size = dim2(0, 28, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(0, -18, 0.5, 0);
+					Position = dim2(0, -10, 0.5, 0);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2372,7 +2372,21 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, 5, 0, 0);
+					Position = dim2(1, 8, 0, 2);
+					BorderSizePixel = 0;
+					TextSize = 12;
+				});
+				--
+				objects[ "team_flag" ] = library:create( "TextLabel" , {
+					FontFace = library.font;
+					Parent = objects[ "holder" ];
+					TextColor3 = rgb(255, 200, 100);
+					Text = "Inmates";
+					TextStrokeTransparency = 0;
+					AnchorPoint = vec2(0, 0);
+					Size = dim2(0, 80, 0, 14);
+					BackgroundTransparency = 1;
+					Position = dim2(1, 8, 0, 20);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2462,6 +2476,10 @@ end)
 				objects["weapon"].TextSize = math.max(8, textSize - 2)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
 
+				local lineH = math.max(12, textSize - 2) + 4
+				local flagPadRight = 8
+				local flagPadTop = 2
+
 				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
 				objects["healthbar_holder"].Parent = flag_bool("esp_healthbar") and objects["holder"] or library.cache
 				objects["healthbar_holder"].Size = dim2(0, barW, 1, 0)
@@ -2470,13 +2488,24 @@ end)
 				objects["health_text"].Parent = flag_bool("esp_healthtext") and objects["holder"] or library.cache
 				objects["health_text"].TextColor3 = flag_color("esp_healthtext_color")
 				objects["health_text"].TextSize = math.max(8, textSize - 2)
+				objects["health_text"].Position = dim2(0, -(flagPadRight + barW + 6), 0.5, 0)
 				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
 
 				objects["flag"].Visible = flag_bool("esp_flags")
 				objects["flag"].Parent = flag_bool("esp_flags") and objects["holder"] or library.cache
 				objects["flag"].TextColor3 = flag_color("esp_flag_innocent")
 				objects["flag"].TextSize = math.max(8, textSize - 2)
+				objects["flag"].Position = dim2(1, flagPadRight, 0, flagPadTop)
 				if objects["flag"].FontFace then objects["flag"].FontFace = fontFace end
+
+				objects["team_flag"].Visible = flag_bool("esp_team_flag")
+				objects["team_flag"].Parent = flag_bool("esp_team_flag") and objects["holder"] or library.cache
+				objects["team_flag"].TextSize = math.max(8, textSize - 2)
+				objects["team_flag"].Position = dim2(1, flagPadRight, 0, flagPadTop + lineH)
+				if st and st.FlagTeamInmatesColor then
+					objects["team_flag"].TextColor3 = type(st.FlagTeamInmatesColor) == "table" and st.FlagTeamInmatesColor.Color or st.FlagTeamInmatesColor
+				end
+				if objects["team_flag"].FontFace then objects["team_flag"].FontFace = fontFace end
 
 				if flag_bool("esp_box") then
 					objects["box_handler"].Parent = objects["holder"]
