@@ -2364,7 +2364,7 @@ end)
 					AnchorPoint = vec2(1, 0.5);
 					Size = dim2(0, 28, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(0, -8 - 4 - 8, 0.5, 0);
+					Position = dim2(0, -8 - 4 - 2, 0.5, 0);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2375,7 +2375,7 @@ end)
 					TextColor3 = flag_color("esp_flag_innocent");
 					Text = "Innocent";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(1, 0);
+					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
 					Position = dim2(1, -16, 0, 2);
@@ -2389,7 +2389,7 @@ end)
 					TextColor3 = rgb(255, 200, 100);
 					Text = "Inmates";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(1, 0);
+					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
 					Position = dim2(1, -16, 0, 20);
@@ -2454,7 +2454,7 @@ end)
 				objects[ "healthbar" ].BackgroundColor3 = color
 				if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] then
 					objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-					objects[ "health_text" ].Position = dim2(0, -8 - barW - 8, 1 - mult, 0)
+					objects[ "health_text" ].Position = dim2(0, -8 - barW - 2, 1 - mult, 0)
 				end
 			end
 
@@ -2496,21 +2496,19 @@ end)
 				objects["health_text"].Parent = flag_bool("esp_healthtext") and objects["holder"] or library.cache
 				objects["health_text"].TextColor3 = flag_color("esp_healthtext_color")
 				objects["health_text"].TextSize = math.max(8, textSize - 2)
-				objects["health_text"].Position = dim2(0, -8 - barW - 8, 0.5, 0)
+				objects["health_text"].Position = dim2(0, -8 - barW - 2, 0.5, 0)
 				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
 
 				objects["flag"].Visible = flag_bool("esp_flags")
 				objects["flag"].Parent = flag_bool("esp_flags") and objects["holder"] or library.cache
 				objects["flag"].TextColor3 = flag_color("esp_flag_innocent")
 				objects["flag"].TextSize = math.max(8, textSize - 2)
-				objects["flag"].AnchorPoint = vec2(1, 0)
 				objects["flag"].Position = dim2(1, flagPadRight, 0, flagPadTop)
 				if objects["flag"].FontFace then objects["flag"].FontFace = fontFace end
 
 				objects["team_flag"].Visible = flag_bool("esp_team_flag")
 				objects["team_flag"].Parent = flag_bool("esp_team_flag") and objects["holder"] or library.cache
 				objects["team_flag"].TextSize = math.max(8, textSize - 2)
-				objects["team_flag"].AnchorPoint = vec2(1, 0)
 				objects["team_flag"].Position = dim2(1, flagPadRight, 0, flagPadTop + lineH)
 				if st and st.FlagTeamInmatesColor then
 					objects["team_flag"].TextColor3 = type(st.FlagTeamInmatesColor) == "table" and st.FlagTeamInmatesColor.Color or st.FlagTeamInmatesColor
