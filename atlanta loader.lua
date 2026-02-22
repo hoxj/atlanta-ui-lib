@@ -1845,6 +1845,7 @@ end)
 				section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
 					library.prioritize(text)
 				end})
+				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
 				section:button_holder({})
 				section:button({name = "Set as target", callback = function()
 					if not library.selected_player then return end
@@ -6068,7 +6069,7 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-		
+
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
@@ -6090,7 +6091,7 @@ end)
 				Padding = dim(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder
 			})
-		
+
 			local icon_outer_frame = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
@@ -6137,7 +6138,7 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-		
+
 			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
