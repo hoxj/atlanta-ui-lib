@@ -494,14 +494,11 @@
 					end
 				end 
 			end
-			-- Re-apply all keybind flags so the keybind list shows correct keys; force active = false so keybinds are not toggled on on load
+			-- Re-apply all keybind flags so the keybind list shows correct keys and active states
 			for flag, val in next, flags do
 				if type(val) == "table" and val.key ~= nil then
 					local fn = library.config_flags[flag]
-					if fn then
-						local copy = { key = val.key, mode = val.mode or "toggle", active = false }
-						pcall(function() fn(copy) end)
-					end
+					if fn then pcall(function() fn(val) end) end
 				end
 			end
 		end 
@@ -6090,7 +6087,7 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-			
+		
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
@@ -6159,7 +6156,7 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-	
+		
 			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
@@ -6201,7 +6198,7 @@ end)
 					if color then team_label.TextColor3 = color end
 				end
 			}
-
+	
 			local actions_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
