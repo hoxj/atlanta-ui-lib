@@ -2060,6 +2060,12 @@ end)
 				if character then
 					character.Parent = items.viewportframe
 					items.camera.CameraSubject = character
+					local hi = Instance.new("Highlight")
+					hi.Parent = character
+					hi.Adornee = character
+					hi.Enabled = false
+					hi.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+					cfg.preview_highlight = hi
 				end
 
 				library:connection(run.RenderStepped, function()
@@ -2532,6 +2538,19 @@ end)
 						ColorSequenceKeypoint.new(0, flag_color("esp_gradient_end")),
 						ColorSequenceKeypoint.new(1, Color3.new(0,0,0))
 					})
+				end
+
+				if cfg.preview_highlight and character and character.Parent then
+					local show = st and st.ChamsEnabled and st.ShowHighlight
+					cfg.preview_highlight.Enabled = show
+					if show then
+						local fillC = st.HighlightFillColor
+						local outC = st.HighlightOutlineColor
+						cfg.preview_highlight.FillColor = type(fillC) == "table" and (fillC.Color or fillC) or fillC or rgb(255,255,255)
+						cfg.preview_highlight.OutlineColor = type(outC) == "table" and (outC.Color or outC) or outC or rgb(0,0,0)
+						cfg.preview_highlight.FillTransparency = type(st.HighlightFillTransparency) == "number" and st.HighlightFillTransparency or 0.5
+						cfg.preview_highlight.OutlineTransparency = type(st.HighlightOutlineTransparency) == "number" and st.HighlightOutlineTransparency or 0
+					end
 				end
 			end
 
