@@ -2025,10 +2025,15 @@ end)
 
 		function library:esp_preview(properties)
 			local cfg = {items = {}, rotation = 0; objects = {};}
+			local props = properties or {}
+			local get_settings = props.get_settings or library.esp_preview_get_settings
 
-			lp.Character.Archivable = true
-			local character = lp.Character:Clone()
-			character.Animate:Destroy()
+			local character = nil
+			if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+				lp.Character.Archivable = true
+				character = lp.Character:Clone()
+				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
+			end
 
 			local items = cfg.items; do 
 				items.viewportframe = library:create( "ViewportFrame" , {
@@ -2045,23 +2050,29 @@ end)
 				items.camera = library:create( "Camera" , {
 					FieldOfView = 70.00022888183594;
 					CameraType = Enum.CameraType.Track;
-					Focus = cfr(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1); -- bro wtf is this serializer doing
+					Focus = cfr(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1);
 					CFrame = cfr(0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1);
 					Parent = ws;
 					Name = "\0"
 				}); 
 
-				items.viewportframe.CurrentCamera = items.camera -- sick
-				character.Parent = items.viewportframe
-
-				items.camera.CameraSubject = character
+				items.viewportframe.CurrentCamera = items.camera
+				if character then
+					character.Parent = items.viewportframe
+					items.camera.CameraSubject = character
+				end
 
 				library:connection(run.RenderStepped, function()
 					task.wait()
-					cfg.rotation += 0.5
-					character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1, -6)) * angle(0, math.rad(cfg.rotation), 0))
+					cfg.rotation = (cfg.rotation or 0) + 0.5
+					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
+						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1, -6)) * angle(0, math.rad(cfg.rotation), 0))
+					end
 				end)
 			end 
+
+			local function flag_color(key) local v = flags[key] return type(v) == "table" and v.Color or v or rgb(255,255,255) end
+			local function flag_bool(key) local v = flags[key] return v == true end
 
 			local objects = cfg.objects; do 
 				objects[ "holder" ] = library:create( "Frame" , {
@@ -2077,29 +2088,29 @@ end)
 				});
 				
 				objects[ "box_outline" ] = library:create( "UIStroke" , {
-					Parent = library.cache;
+					Parent = objects[ "holder" ];
 					LineJoinMode = Enum.LineJoinMode.Miter
 				});
 				
 				objects[ "name" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
-					Parent = library.cache;
-					TextColor3 = flags["Name_Color"].Color;
+					Parent = objects[ "holder" ];
+					TextColor3 = flag_color("esp_name_color");
 					BorderColor3 = rgb(0, 0, 0);
-					Text = string.format("%s (@%s)", lp.DisplayName, lp.Name);
+					Text = string.format("%s (@%s)", lp.DisplayName or lp.Name, lp.Name);
 					Name = "\0";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(0, 1);
+					AnchorPoint = vec2(0.5, 1);
 					Size = dim2(1, 0, 0, 0);
 					BackgroundTransparency = 1;
-					Position = dim2(0, 0, 0, -5);
+					Position = dim2(0.5, 0, 0, -5);
 					BorderSizePixel = 0;
 					AutomaticSize = Enum.AutomaticSize.Y;
-					TextSize = 12;
+					TextSize = 14;
 				});
 				
 				objects[ "box_handler" ] = library:create( "Frame" , {
-					Parent = library.cache;
+					Parent = objects[ "holder" ];
 					Name = "\0";
 					BackgroundTransparency = 1;
 					Position = dim2(0, 1, 0, 1);
@@ -2110,7 +2121,7 @@ end)
 				});
 				
 				objects[ "box_color" ] = library:create( "UIStroke" , {
-					Color = rgb(255, 255, 255);
+					Color = flag_color("esp_box_color");
 					LineJoinMode = Enum.LineJoinMode.Miter;
 					Name = "\0";
 					Parent = objects[ "box_handler" ]
@@ -2132,18 +2143,17 @@ end)
 					LineJoinMode = Enum.LineJoinMode.Miter
 				});  
 				
-				-- Corner Boxes
-					objects[ "corners" ] = library:create( "Frame" , {
-						Visible = true;
-						BorderColor3 = rgb(0, 0, 0);
-						Parent = library.cache;
-						BackgroundTransparency = 1;
-						Position = dim2(0, -1, 0, 2);
-						Name = "\0";
-						Size = dim2(1, 0, 1, 0);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(255, 255, 255)
-					});
+				objects[ "corners" ] = library:create( "Frame" , {
+					Visible = true;
+					BorderColor3 = rgb(0, 0, 0);
+					Parent = objects[ "holder" ];
+					BackgroundTransparency = 1;
+					Position = dim2(0, -1, 0, 2);
+					Name = "\0";
+					Size = dim2(1, 0, 1, 0);
+					BorderSizePixel = 0;
+					BackgroundColor3 = rgb(255, 255, 255)
+				});
 
 					objects[ "1" ] = library:create( "Frame" , {
 						Parent = objects[ "corners" ];
@@ -2161,7 +2171,7 @@ end)
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, -2);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 					
 					objects[ "2" ] = library:create( "Frame" , {
@@ -2180,7 +2190,7 @@ end)
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, 1);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 					
 					objects[ "3" ] = library:create( "Frame" , {
@@ -2200,7 +2210,7 @@ end)
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, -2);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 					
 					objects[ "4" ] = library:create( "Frame" , {
@@ -2220,7 +2230,7 @@ end)
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, 1);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 					
 					objects[ "5" ] = library:create( "Frame" , {
@@ -2240,7 +2250,7 @@ end)
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, -2);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 					
 					objects[ "6" ] = library:create( "Frame" , {
@@ -2261,7 +2271,7 @@ end)
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, 1);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 					
 					objects[ "7" ] = library:create( "Frame" , {
@@ -2281,10 +2291,10 @@ end)
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, -2);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 					
-					objects[ "7" ] = library:create( "Frame" , {
+					objects[ "8" ] = library:create( "Frame" , {
 						BorderColor3 = rgb(0, 0, 0);
 						Rotation = 180;
 						Parent = objects[ "corners" ];
@@ -2297,19 +2307,19 @@ end)
 					});
 					
 					library:create( "Frame" , {
-						Parent = objects[ "7" ];
+						Parent = objects[ "8" ];
 						Position = dim2(0, 1, 0, -2);
 						BorderColor3 = rgb(0, 0, 0);
 						Size = dim2(1, -2, 1, 1);
 						BorderSizePixel = 0;
-						BackgroundColor3 = flags["Box_Color"].Color
+						BackgroundColor3 = flag_color("esp_box_color")
 					});
 				-- 
 				
 				-- Healthbar
 					objects[ "healthbar_holder" ] = library:create( "Frame" , {
 						AnchorPoint = vec2(1, 0);
-						Parent = library.cache;
+						Parent = objects[ "holder" ];
 						Name = "\0";
 						Position = dim2(0, -5, 0, 0);
 						BorderColor3 = rgb(0, 0, 0);
@@ -2327,20 +2337,60 @@ end)
 						BorderSizePixel = 0;
 						BackgroundColor3 = rgb(255, 255, 255)
 					});
-				-- 
+				--
+				objects[ "box_fill" ] = library:create( "Frame" , {
+					Parent = objects[ "holder" ];
+					Name = "\0";
+					Position = dim2(0, 1, 0, 1);
+					Size = dim2(1, -2, 1, -2);
+					BorderSizePixel = 0;
+					BackgroundTransparency = 0.15;
+					BackgroundColor3 = rgb(255, 255, 255)
+				});
+				local box_fill_grad = library:create( "UIGradient" , { Parent = objects[ "box_fill" ]; Rotation = -90 });
+				--
+				objects[ "health_text" ] = library:create( "TextLabel" , {
+					FontFace = library.font;
+					Parent = objects[ "holder" ];
+					TextColor3 = flag_color("esp_healthtext_color");
+					Text = "100";
+					TextStrokeTransparency = 0;
+					AnchorPoint = vec2(0.5, 0.5);
+					Size = dim2(0, 24, 0, 14);
+					BackgroundTransparency = 1;
+					Position = dim2(0, -18, 0.5, 0);
+					BorderSizePixel = 0;
+					TextSize = 12;
+				});
+				--
+				objects[ "flag" ] = library:create( "TextLabel" , {
+					FontFace = library.font;
+					Parent = objects[ "holder" ];
+					TextColor3 = flag_color("esp_flag_innocent");
+					Text = "Innocent";
+					TextStrokeTransparency = 0;
+					AnchorPoint = vec2(0, 0);
+					Size = dim2(0, 80, 0, 14);
+					BackgroundTransparency = 1;
+					Position = dim2(1, 5, 0, 0);
+					BorderSizePixel = 0;
+					TextSize = 12;
+				});
+				--
 
 				-- Distance esp
 					objects[ "distance" ] = library:create( "TextLabel" , {
 						FontFace = library.font;
-						TextColor3 = flags["Distance_Color"].Color;
+						TextColor3 = flag_color("esp_distance_color");
 						BorderColor3 = rgb(0, 0, 0);
-						Text = "127st";
-						Parent = library.cache;
+						Text = "127m";
+						Parent = objects[ "holder" ];
 						TextStrokeTransparency = 0;
 						Name = "\0";
 						Size = dim2(1, 0, 0, 0);
 						BackgroundTransparency = 1;
-						Position = dim2(0, 0, 1, 5);
+						Position = dim2(0.5, 0, 1, 5);
+						AnchorPoint = vec2(0.5, 0);
 						BorderSizePixel = 0;
 						AutomaticSize = Enum.AutomaticSize.Y;
 						TextSize = 12;
@@ -2350,15 +2400,16 @@ end)
 				-- Weapon esp
 					objects[ "weapon" ] = library:create( "TextLabel" , {
 						FontFace = library.font;
-						TextColor3 = flags["Weapon_Color"].Color;
+						TextColor3 = flag_color("esp_weapon_color");
 						BorderColor3 = rgb(0, 0, 0);
 						Text = "[ Weapon ]";
-						Parent = library.cache;
+						Parent = objects[ "holder" ];
 						TextStrokeTransparency = 0;
 						Name = "\0";
 						Size = dim2(1, 0, 0, 0);
 						BackgroundTransparency = 1;
-						Position = dim2(0, 0, 1, 19);
+						Position = dim2(0.5, 0, 1, 19);
+						AnchorPoint = vec2(0.5, 0);
 						BorderSizePixel = 0;
 						AutomaticSize = Enum.AutomaticSize.Y;
 						TextSize = 12;
@@ -2367,63 +2418,91 @@ end)
 			end 
 
 			cfg.change_health = function()
-				if flags[ "healthbar_holder" ] and flags[ "healthbar_holder" ].Parent ~= objects[ "holder" ] then 
-					return 
+				if not flag_bool("esp_healthbar") or not objects[ "healthbar_holder" ].Parent or objects[ "healthbar_holder" ].Parent ~= objects[ "holder" ] then return end
+				local st = get_settings and get_settings()
+				local smooth = (st and st.HealthSmooth) or 0.05
+				local target = 0.5 + 0.5 * math.sin(tick() * 2)
+				cfg._health_prev = (cfg._health_prev or target) + (target - (cfg._health_prev or target)) * math.min(smooth * 30, 1)
+				local mult = math.clamp(cfg._health_prev, 0, 1)
+				local lowC = flag_color("esp_health_low")
+				local highC = flag_color("esp_health_high")
+				local midC = flag_color("esp_health_mid")
+				local color = mult > 0.5 and (midC:Lerp(highC, (mult - 0.5) * 2)) or (lowC:Lerp(midC, mult * 2))
+				objects[ "healthbar" ].Size = UDim2.new(1, -2, mult, -2)
+				objects[ "healthbar" ].Position = UDim2.new(0, 1, 1 - mult, 1)
+				objects[ "healthbar" ].BackgroundColor3 = color
+				if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] then
+					objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
+				end
+			end
+
+			function cfg.refresh_elements( )
+				local st = get_settings and get_settings()
+				local textSize = (st and st.TextSize) or 14
+				local barW = (st and st.HealthBarWidth) or 3
+				local boxFillTrans = (st and st.BoxFillTransparency) or 0.85
+				local fontFace = (st and st.ESPFont) or library.font
+				objects.holder.Parent = flag_bool("esp_enabled") and items.viewportframe or library.cache
+
+				objects["name"].Visible = flag_bool("esp_names")
+				objects["name"].Parent = flag_bool("esp_names") and objects["holder"] or library.cache
+				objects["name"].TextColor3 = flag_color("esp_name_color")
+				objects["name"].TextSize = textSize
+				if objects["name"].FontFace then objects["name"].FontFace = fontFace end
+
+				objects["distance"].Visible = flag_bool("esp_distance")
+				objects["distance"].Parent = flag_bool("esp_distance") and objects["holder"] or library.cache
+				objects["distance"].TextColor3 = flag_color("esp_distance_color")
+				objects["distance"].TextSize = math.max(8, textSize - 2)
+				if objects["distance"].FontFace then objects["distance"].FontFace = fontFace end
+
+				objects["weapon"].Visible = flag_bool("esp_weapon")
+				objects["weapon"].Parent = flag_bool("esp_weapon") and objects["holder"] or library.cache
+				objects["weapon"].TextColor3 = flag_color("esp_weapon_color")
+				objects["weapon"].TextSize = math.max(8, textSize - 2)
+				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
+
+				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
+				objects["healthbar_holder"].Parent = flag_bool("esp_healthbar") and objects["holder"] or library.cache
+				objects["healthbar_holder"].Size = dim2(0, barW, 1, 0)
+
+				objects["health_text"].Visible = flag_bool("esp_healthtext")
+				objects["health_text"].Parent = flag_bool("esp_healthtext") and objects["holder"] or library.cache
+				objects["health_text"].TextColor3 = flag_color("esp_healthtext_color")
+				objects["health_text"].TextSize = math.max(8, textSize - 2)
+				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
+
+				objects["flag"].Visible = flag_bool("esp_flags")
+				objects["flag"].Parent = flag_bool("esp_flags") and objects["holder"] or library.cache
+				objects["flag"].TextColor3 = flag_color("esp_flag_innocent")
+				objects["flag"].TextSize = math.max(8, textSize - 2)
+				if objects["flag"].FontFace then objects["flag"].FontFace = fontFace end
+
+				if flag_bool("esp_box") then
+					objects["box_handler"].Parent = objects["holder"]
+					objects["box_outline"].Parent = objects["holder"]
+					objects["corners"].Parent = library.cache
+				else
+					objects["box_handler"].Parent = library.cache
+					objects["box_outline"].Parent = library.cache
+					objects["corners"].Parent = library.cache
 				end
 
-				local humanoid = character.Humanoid
-				
-				local multiplier = humanoid.MaxHealth * math.abs(math.sin(tick() * 2)) / humanoid.MaxHealth
-				local color = flags[ "Health_Low" ].Color:Lerp( flags["Health_High"].Color, multiplier)
-				
-				objects[ "healthbar" ].Size = UDim2.new(1, -2, multiplier, -2)
-				objects[ "healthbar" ].Position = UDim2.new(0, 1, 1 - multiplier, 1)
-				objects[ "healthbar" ].BackgroundColor3 = color
-			end -- wtf why diff func defining
+				local boxCol = flag_color("esp_box_color")
+				objects["box_color"].Color = boxCol
+				for _, corner in objects["corners"]:GetChildren() do
+					local fr = corner:FindFirstChild("Frame") or corner:GetChildren()[1]
+					if fr then pcall(function() fr.BackgroundColor3 = boxCol end) end
+				end
 
-			function cfg.refresh_elements( )                                
-				objects.holder.Parent = flags["Enabled"] and items.viewportframe or library.cache
-
-				local temp = {
-					["Names"] = objects["name"]; 
-					["Name_Color"] = {objects["name"]};
-					["Healthbar"] = objects[ "healthbar_holder" ];
-					["Distance"] = objects[ "distance" ];
-					["Weapon"] = objects[ "weapon" ];
-					["Distance_Color"] = {objects[ "distance" ]};
-					["Weapon_Color"] = {objects[ "weapon" ]};
-				}
-
-				for flag,object in temp do 
-					if type(object) == "table" then 
-						object[1].TextColor3 = flags[flag].Color
-					else 
-						object.Parent = flags[flag] and objects[ "holder" ] or library.cache
-					end
-				end 
-				
-				local is_corner = flags[ "Box_Type" ] == "Corner"
-
-				if flags["Boxes"] then 
-					if is_corner then 
-						objects[ "corners" ].Parent = objects["holder"]
-						objects[ "box_handler" ].Parent = library.cache
-						objects[ "box_outline" ].Parent = library.cache
-					else 
-						objects[ "box_handler" ].Parent = objects[ "holder" ]
-						objects[ "box_outline" ].Parent = objects[ "holder" ]
-						objects[ "corners" ].Parent = library.cache
-					end 
-				else
-					objects[ "corners" ].Parent =  library.cache
-					objects[ "box_handler" ].Parent = library.cache
-					objects[ "box_outline" ].Parent = library.cache
-				end 
-
-				objects[ "box_color" ].Color = flags["Box_Color"].Color 
-
-				for _, corner in objects[ "corners" ]:GetChildren() do
-					corner.Frame.BackgroundColor3 = flags["Box_Color"].Color
+				objects["box_fill"].Visible = flag_bool("esp_box_fill")
+				objects["box_fill"].Parent = flag_bool("esp_box_fill") and objects["holder"] or library.cache
+				objects["box_fill"].BackgroundTransparency = boxFillTrans
+				if objects["box_fill"]:FindFirstChildOfClass("UIGradient") then
+					objects["box_fill"]:FindFirstChildOfClass("UIGradient").Color = ColorSequence.new({
+						ColorSequenceKeypoint.new(0, flag_color("esp_gradient_end")),
+						ColorSequenceKeypoint.new(1, Color3.new(0,0,0))
+					})
 				end
 			end
 
