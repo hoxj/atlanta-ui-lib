@@ -73,7 +73,8 @@
 		folders = {
 			"/fonts",
 			"/configs",
-			"/images"
+			"/images",
+			"/audio"
 		},
 		flags = {},
 		config_flags = {},
