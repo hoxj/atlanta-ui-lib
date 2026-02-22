@@ -2364,7 +2364,7 @@ end)
 					AnchorPoint = vec2(1, 0.5);
 					Size = dim2(0, 28, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(0, -8 - 4 - 6, 0.5, 0);
+					Position = dim2(0, -8 - 4 - 2, 0.5, 0);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2378,7 +2378,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -4, 0, 2);
+					Position = dim2(1, -16, 0, 2);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2392,7 +2392,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -4, 0, 20);
+					Position = dim2(1, -16, 0, 20);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2454,7 +2454,7 @@ end)
 				objects[ "healthbar" ].BackgroundColor3 = color
 				if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] then
 					objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-					objects[ "health_text" ].Position = dim2(0, -6 - barW - 6, 1 - mult, 0)
+					objects[ "health_text" ].Position = dim2(0, -8 - barW - 2, 1 - mult, 0)
 				end
 			end
 
@@ -2485,7 +2485,7 @@ end)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
 
 				local lineH = math.max(12, textSize - 2) + 4
-				local flagPadRight = -2
+				local flagPadRight = -16
 				local flagPadTop = 2
 
 				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
@@ -2496,7 +2496,7 @@ end)
 				objects["health_text"].Parent = flag_bool("esp_healthtext") and objects["holder"] or library.cache
 				objects["health_text"].TextColor3 = flag_color("esp_healthtext_color")
 				objects["health_text"].TextSize = math.max(8, textSize - 2)
-				objects["health_text"].Position = dim2(0, -8 - barW - 6, 0.5, 0)
+				objects["health_text"].Position = dim2(0, -8 - barW - 2, 0.5, 0)
 				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
 
 				objects["flag"].Visible = flag_bool("esp_flags")
