@@ -2378,7 +2378,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -2, 0, 2);
+					Position = dim2(1, -4, 0, 2);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2392,7 +2392,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -2, 0, 20);
+					Position = dim2(1, -4, 0, 20);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2485,7 +2485,7 @@ end)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
 
 				local lineH = math.max(12, textSize - 2) + 4
-				local flagPadRight = -4
+				local flagPadRight = -2
 				local flagPadTop = 2
 
 				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
