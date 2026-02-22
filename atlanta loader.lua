@@ -2378,7 +2378,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -80, 0, 12);
+					Position = dim2(1, 4, 0, 2);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2392,7 +2392,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -80, 0, 12 + (math.max(12, 12 - 2) + 4));
+					Position = dim2(1, 4, 0, 20);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2441,6 +2441,7 @@ end)
 				if not flag_bool("esp_healthbar") or not objects[ "healthbar_holder" ].Parent or objects[ "healthbar_holder" ].Parent ~= objects[ "holder" ] then return end
 				local st = get_settings and get_settings()
 				local smooth = (st and st.HealthSmooth) or 0.05
+				local barW = (st and st.HealthBarWidth) or 3
 				local target = 0.5 + 0.5 * math.sin(tick() * 2)
 				cfg._health_prev = (cfg._health_prev or target) + (target - (cfg._health_prev or target)) * math.min(smooth * 30, 1)
 				local mult = math.clamp(cfg._health_prev, 0, 1)
@@ -2453,6 +2454,7 @@ end)
 				objects[ "healthbar" ].BackgroundColor3 = color
 				if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] then
 					objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
+					objects[ "health_text" ].Position = dim2(0, -8 - barW - 6, 1 - mult / 2, 0)
 				end
 			end
 
@@ -2483,8 +2485,8 @@ end)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
 
 				local lineH = math.max(12, textSize - 2) + 4
-				local flagPadRight = -80
-				local flagPadTop = 12
+				local flagPadRight = 4
+				local flagPadTop = 2
 
 				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
 				objects["healthbar_holder"].Parent = flag_bool("esp_healthbar") and objects["holder"] or library.cache
