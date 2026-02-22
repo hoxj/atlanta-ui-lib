@@ -493,7 +493,14 @@
 						function_set(v)
 					end
 				end 
-			end 
+			end
+			-- Re-apply all keybind flags so the keybind list shows correct keys and active states
+			for flag, val in next, flags do
+				if type(val) == "table" and val.key ~= nil then
+					local fn = library.config_flags[flag]
+					if fn then pcall(function() fn(val) end) end
+				end
+			end
 		end 
 		
 		function library:round(number, float) 
@@ -1884,11 +1891,22 @@ end)
 				section:button({name = "Teleport", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
-					if p and p.Character then
-						local myRoot = lp.Character:FindFirstChild("HumanoidRootPart")
-						local theirRoot = p.Character:FindFirstChild("HumanoidRootPart")
-						if myRoot and theirRoot then myRoot.CFrame = theirRoot.CFrame end
-					end
+					if not p or not p.Character then return end
+					local myRoot = lp.Character:FindFirstChild("HumanoidRootPart")
+					local theirRoot = p.Character:FindFirstChild("HumanoidRootPart")
+					if not myRoot or not theirRoot then return end
+					pcall(function()
+						local targetCF = theirRoot.CFrame
+						myRoot.CFrame = targetCF
+						local held = 0
+						local conn
+						conn = game:GetService("RunService").Heartbeat:Connect(function()
+							if not myRoot or not myRoot.Parent then if conn then conn:Disconnect() end return end
+							myRoot.CFrame = targetCF
+							held = held + 1
+							if held >= 8 then if conn then conn:Disconnect() end end
+						end)
+					end)
 				end})
 				section.holder = main_holder
 				section:button_holder({})
@@ -6069,7 +6087,7 @@ end)
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
 			end})
-
+			
 			local icon_row = library:create("Frame", {
 				Parent = self.holder,
 				Name = "",
@@ -6091,7 +6109,7 @@ end)
 				Padding = dim(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder
 			})
-
+			
 			local icon_outer_frame = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
@@ -6138,7 +6156,7 @@ end)
 				ScaleType = Enum.ScaleType.Fit
 			})
 			cfg.selected_icon = selected_icon
-
+			
 			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
@@ -6180,7 +6198,7 @@ end)
 					if color then team_label.TextColor3 = color end
 				end
 			}
-
+	
 			local actions_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
