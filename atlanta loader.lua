@@ -2364,7 +2364,7 @@ end)
 					AnchorPoint = vec2(1, 0.5);
 					Size = dim2(0, 28, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(0, -10, 0.5, 0);
+					Position = dim2(0, -8 - 4 - 6, 0.5, 0);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2378,7 +2378,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -80, 0, 2);
+					Position = dim2(1, -80, 0, 12);
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2392,7 +2392,7 @@ end)
 					AnchorPoint = vec2(0, 0);
 					Size = dim2(0, 80, 0, 14);
 					BackgroundTransparency = 1;
-					Position = dim2(1, -80, 0, 20);
+					Position = dim2(1, -80, 0, 12 + (math.max(12, 12 - 2) + 4));
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
@@ -2484,7 +2484,7 @@ end)
 
 				local lineH = math.max(12, textSize - 2) + 4
 				local flagPadRight = -80
-				local flagPadTop = 2
+				local flagPadTop = 12
 
 				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
 				objects["healthbar_holder"].Parent = flag_bool("esp_healthbar") and objects["holder"] or library.cache
@@ -2494,7 +2494,7 @@ end)
 				objects["health_text"].Parent = flag_bool("esp_healthtext") and objects["holder"] or library.cache
 				objects["health_text"].TextColor3 = flag_color("esp_healthtext_color")
 				objects["health_text"].TextSize = math.max(8, textSize - 2)
-				objects["health_text"].Position = dim2(0, -(flagPadRight + barW + 6), 0.5, 0)
+				objects["health_text"].Position = dim2(0, -8 - barW - 6, 0.5, 0)
 				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
 
 				objects["flag"].Visible = flag_bool("esp_flags")
