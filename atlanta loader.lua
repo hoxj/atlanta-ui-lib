@@ -4433,10 +4433,12 @@ end)
 					}
 					
 					if cfg.name and KEYBIND_ELEMENT and KEYBIND_ELEMENT.Parent then 
-						KEYBIND_ELEMENT.Visible = cfg.active
-						library:tween(KEYBIND_ELEMENT, { TextTransparency = cfg.active and 0 or 1 })
+						local keySet = (cfg.key and tostring(cfg.key) ~= "none")
+						KEYBIND_ELEMENT.Visible = keySet
+						KEYBIND_ELEMENT.TextTransparency = 0
+						KEYBIND_ELEMENT.TextColor3 = cfg.active and themes.preset.accent or themes.preset.text
 						local stroke = KEYBIND_ELEMENT:FindFirstChildOfClass("UIStroke")
-						if stroke then library:tween(stroke, { Transparency = cfg.active and 0 or 1 }) end
+						if stroke then stroke.Transparency = 0 stroke.Color = cfg.active and themes.preset.accent or themes.preset.text end
 						local text = tostring(cfg.key) ~= "Enums" and (keys[cfg.key] or tostring(cfg.key):gsub("Enum.", "")) or nil
 						local __text = text and (tostring(text):gsub("KeyCode.", ""):gsub("UserInputType.", ""))
 						KEYBIND_ELEMENT.Text = "[ " .. string.upper(string.sub(cfg.mode, 1, 1)) .. string.sub(cfg.mode, 2) .. " ] " .. cfg.name .. " - " .. (__text or "none")
