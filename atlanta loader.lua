@@ -1384,21 +1384,20 @@
 				}) library:apply_theme(UIGradient, "contrast", "Color") 
 			-- 
 
-			-- keybind list
+			-- keybind list (position controlled by Keybind List X/Y sliders; not draggable)
 				local outline = library:create("Frame", {
 					Parent = sgui,
 					Name = "",
 					Visible = false, 
 					Active = true,
-					Draggable = true, 
+					Draggable = false,
 					Position = dim2(0, 50, 0, 200),
 					BorderColor3 = rgb(0, 0, 0),
 					Size = dim2(0, 182, 0, 25),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline
 				})
-				library:apply_theme(outline, "outline", "BackgroundColor3") 
-				library:draggify(outline)
+				library:apply_theme(outline, "outline", "BackgroundColor3")
 				library:make_resizable(outline)
 				library.keybind_list_frame = outline 
 				
@@ -1722,6 +1721,28 @@ end)
 				:keybind({callback = window.set_menu_visibility, key = Enum.KeyCode.Insert})
 				section:toggle({name = "Keybind List", flag = "keybind_list", callback = function(bool)
 					library.keybind_list_frame.Visible = bool
+					if bool and flags["keybind_list_x"] ~= nil and flags["keybind_list_y"] ~= nil then
+						local vp = camera.ViewportSize
+						local x = math.clamp(flags["keybind_list_x"], 0, math.max(0, vp.X - library.keybind_list_frame.Size.X.Offset))
+						local y = math.clamp(flags["keybind_list_y"], 0, math.max(0, vp.Y - library.keybind_list_frame.Size.Y.Offset))
+						library.keybind_list_frame.Position = dim2(0, x, 0, y)
+					end
+				end})
+				section:slider({name = "Keybind List X", flag = "keybind_list_x", min = 0, max = 2000, default = 50, interval = 1, callback = function(v)
+					if library.keybind_list_frame then
+						local vp = camera.ViewportSize
+						local x = math.clamp(v, 0, math.max(0, vp.X - library.keybind_list_frame.Size.X.Offset))
+						local y = flags["keybind_list_y"] or 200
+						library.keybind_list_frame.Position = dim2(0, x, 0, math.clamp(y, 0, math.max(0, vp.Y - library.keybind_list_frame.Size.Y.Offset)))
+					end
+				end})
+				section:slider({name = "Keybind List Y", flag = "keybind_list_y", min = 0, max = 2000, default = 200, interval = 1, callback = function(v)
+					if library.keybind_list_frame then
+						local vp = camera.ViewportSize
+						local x = flags["keybind_list_x"] or 50
+						local y = math.clamp(v, 0, math.max(0, vp.Y - library.keybind_list_frame.Size.Y.Offset))
+						library.keybind_list_frame.Position = dim2(0, math.clamp(x, 0, math.max(0, vp.X - library.keybind_list_frame.Size.X.Offset)), 0, y)
+					end
 				end})
 				section:toggle({name = "Watermark", flag = "watermark", callback = function(bool)
 					watermark.set_visible(bool)
@@ -2459,28 +2480,33 @@ end)
 				end
 			end
 
+			local function safe_set_parent(inst, new_parent)
+				if not inst or not new_parent then return end
+				pcall(function() inst.Parent = new_parent end)
+			end
+
 			function cfg.refresh_elements( )
 				local st = get_settings and get_settings()
 				local textSize = (st and st.TextSize) or 14
 				local barW = (st and st.HealthBarWidth) or 3
 				local boxFillTrans = (st and st.BoxFillTransparency) or 0.85
 				local fontFace = (st and st.ESPFont) or library.font
-				objects.holder.Parent = flag_bool("esp_enabled") and items.viewportframe or library.cache
+				safe_set_parent(objects.holder, flag_bool("esp_enabled") and items.viewportframe or library.cache)
 
 				objects["name"].Visible = flag_bool("esp_names")
-				objects["name"].Parent = flag_bool("esp_names") and objects["holder"] or library.cache
+				safe_set_parent(objects["name"], flag_bool("esp_names") and objects["holder"] or library.cache)
 				objects["name"].TextColor3 = flag_color("esp_name_color")
 				objects["name"].TextSize = textSize
 				if objects["name"].FontFace then objects["name"].FontFace = fontFace end
 
 				objects["distance"].Visible = flag_bool("esp_distance")
-				objects["distance"].Parent = flag_bool("esp_distance") and objects["holder"] or library.cache
+				safe_set_parent(objects["distance"], flag_bool("esp_distance") and objects["holder"] or library.cache)
 				objects["distance"].TextColor3 = flag_color("esp_distance_color")
 				objects["distance"].TextSize = math.max(8, textSize - 2)
 				if objects["distance"].FontFace then objects["distance"].FontFace = fontFace end
 
 				objects["weapon"].Visible = flag_bool("esp_weapon")
-				objects["weapon"].Parent = flag_bool("esp_weapon") and objects["holder"] or library.cache
+				safe_set_parent(objects["weapon"], flag_bool("esp_weapon") and objects["holder"] or library.cache)
 				objects["weapon"].TextColor3 = flag_color("esp_weapon_color")
 				objects["weapon"].TextSize = math.max(8, textSize - 2)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
@@ -2490,25 +2516,25 @@ end)
 				local flagPadTop = 2
 
 				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
-				objects["healthbar_holder"].Parent = flag_bool("esp_healthbar") and objects["holder"] or library.cache
+				safe_set_parent(objects["healthbar_holder"], flag_bool("esp_healthbar") and objects["holder"] or library.cache)
 				objects["healthbar_holder"].Size = dim2(0, barW, 1, 0)
 
 				objects["health_text"].Visible = flag_bool("esp_healthtext")
-				objects["health_text"].Parent = flag_bool("esp_healthtext") and objects["holder"] or library.cache
+				safe_set_parent(objects["health_text"], flag_bool("esp_healthtext") and objects["holder"] or library.cache)
 				objects["health_text"].TextColor3 = flag_color("esp_healthtext_color")
 				objects["health_text"].TextSize = math.max(8, textSize - 2)
 				objects["health_text"].Position = dim2(0, -8 - barW - 2, 0.5, 0)
 				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
 
 				objects["flag"].Visible = flag_bool("esp_flags")
-				objects["flag"].Parent = flag_bool("esp_flags") and objects["holder"] or library.cache
+				safe_set_parent(objects["flag"], flag_bool("esp_flags") and objects["holder"] or library.cache)
 				objects["flag"].TextColor3 = flag_color("esp_flag_innocent")
 				objects["flag"].TextSize = math.max(8, textSize - 2)
 				objects["flag"].Position = dim2(1, flagPadRight, 0, flagPadTop)
 				if objects["flag"].FontFace then objects["flag"].FontFace = fontFace end
 
 				objects["team_flag"].Visible = flag_bool("esp_team_flag")
-				objects["team_flag"].Parent = flag_bool("esp_team_flag") and objects["holder"] or library.cache
+				safe_set_parent(objects["team_flag"], flag_bool("esp_team_flag") and objects["holder"] or library.cache)
 				objects["team_flag"].TextSize = math.max(8, textSize - 2)
 				objects["team_flag"].Position = dim2(1, flagPadRight, 0, flagPadTop + lineH)
 				if st and st.FlagTeamInmatesColor then
@@ -2517,13 +2543,13 @@ end)
 				if objects["team_flag"].FontFace then objects["team_flag"].FontFace = fontFace end
 
 				if flag_bool("esp_box") then
-					objects["box_handler"].Parent = objects["holder"]
-					objects["box_outline"].Parent = objects["holder"]
-					objects["corners"].Parent = library.cache
+					safe_set_parent(objects["box_handler"], objects["holder"])
+					safe_set_parent(objects["box_outline"], objects["holder"])
+					safe_set_parent(objects["corners"], library.cache)
 				else
-					objects["box_handler"].Parent = library.cache
-					objects["box_outline"].Parent = library.cache
-					objects["corners"].Parent = library.cache
+					safe_set_parent(objects["box_handler"], library.cache)
+					safe_set_parent(objects["box_outline"], library.cache)
+					safe_set_parent(objects["corners"], library.cache)
 				end
 
 				local boxCol = flag_color("esp_box_color")
@@ -2534,7 +2560,7 @@ end)
 				end
 
 				objects["box_fill"].Visible = flag_bool("esp_box_fill")
-				objects["box_fill"].Parent = flag_bool("esp_box_fill") and objects["holder"] or library.cache
+				safe_set_parent(objects["box_fill"], flag_bool("esp_box_fill") and objects["holder"] or library.cache)
 				objects["box_fill"].BackgroundTransparency = boxFillTrans
 				if objects["box_fill"]:FindFirstChildOfClass("UIGradient") then
 					objects["box_fill"]:FindFirstChildOfClass("UIGradient").Color = ColorSequence.new({
