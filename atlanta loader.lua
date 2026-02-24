@@ -2604,6 +2604,8 @@ end)
 				time = properties.time or 5,
 				text = properties.text or properties.name or "Notification",
 				flashing = false, 
+				text_color = properties.text_color or nil,
+				rich_text = properties.rich_text or false,
 			}
 		
 			-- Instances
@@ -2652,9 +2654,10 @@ end)
 					Parent = watermark_background,
 					Name = "",
 					FontFace = library.font,
-					TextColor3 = themes.preset.text,
+					TextColor3 = cfg.text_color or themes.preset.text,
 					BorderColor3 = rgb(0, 0, 0),
 					Text = "  " .. cfg.text .. "  ",
+					RichText = cfg.rich_text,
 					Size = UDim2.new(0, 0, 1, 0),
 					BackgroundTransparency = 1,
 					Position = UDim2.new(0, 0, 0, -1),
@@ -3764,7 +3767,7 @@ end)
 					Name = "colorpicker",
 					Position = dim2(0, colorpicker_button.AbsolutePosition.X + 1, 0, colorpicker_button.AbsolutePosition.Y + 17),
 					BorderColor3 = rgb(0, 0, 0),
-					Size = dim2(0, 190, 0, 210),
+					Size = dim2(0, 190, 0, 234),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline,
 					Visible = false,
@@ -3912,6 +3915,24 @@ end)
 					PaddingLeft = dim(0, 4)
 				})
 				
+				local hex_input = library:create("TextBox", {
+					Parent = main_holder_background,
+					Name = "hex_input",
+					Position = dim2(0, 0, 1, -28),
+					Size = dim2(1, -20, 0, 16),
+					BorderColor3 = rgb(0, 0, 0),
+					BorderSizePixel = 1,
+					BackgroundColor3 = rgb(30, 30, 40),
+					FontFace = library.font,
+					TextColor3 = rgb(220, 220, 220),
+					TextSize = 11,
+					Text = "#FFFFFF",
+					PlaceholderText = "#FFFFFF",
+					PlaceholderColor3 = rgb(100, 100, 100),
+					ClearTextOnFocus = false,
+					TextXAlignment = Enum.TextXAlignment.Center,
+				})
+
 				local alpha = library:create("TextButton", {
 					Parent = main_holder_background,
 					AnchorPoint = vec2(0, 0.5),
@@ -3981,7 +4002,7 @@ end)
 					Name = "hue",
 					Position = dim2(1, -1, 0, 0),
 					BorderColor3 = rgb(0, 0, 0),
-					Size = dim2(0, 14, 1, -20),
+					Size = dim2(0, 14, 1, -42),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.inline,
 					Text = "",
@@ -4067,7 +4088,7 @@ end)
 					Parent = main_holder_background,
 					Name = "satval_picker",
 					BorderColor3 = rgb(0, 0, 0),
-					Size = dim2(1, -20, 1, -20),
+					Size = dim2(1, -20, 1, -42),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.inline
 				}) library:apply_theme(satval_picker, "inline", "BackgroundColor3") 
@@ -4203,9 +4224,31 @@ end)
 				flags[cfg.flag] = {} 
 				flags[cfg.flag]["Color"] = Color
 				flags[cfg.flag]["Transparency"] = a
+
+				pcall(function()
+					hex_input.Text = string.format("#%02X%02X%02X", math.floor(Color.R * 255 + 0.5), math.floor(Color.G * 255 + 0.5), math.floor(Color.B * 255 + 0.5))
+				end)
 			
 				cfg.callback(Color, a)
 			end
+
+			hex_input.FocusLost:Connect(function()
+				local raw = hex_input.Text:gsub("#", ""):gsub("^%s+", ""):gsub("%s+$", "")
+				if #raw == 6 then
+					local r, g, b = tonumber(raw:sub(1,2), 16), tonumber(raw:sub(3,4), 16), tonumber(raw:sub(5,6), 16)
+					if r and g and b then
+						cfg.set(Color3.fromRGB(r, g, b), nil)
+						return
+					end
+				elseif #raw == 3 then
+					local r, g, b = tonumber(raw:sub(1,1):rep(2), 16), tonumber(raw:sub(2,2):rep(2), 16), tonumber(raw:sub(3,3):rep(2), 16)
+					if r and g and b then
+						cfg.set(Color3.fromRGB(r, g, b), nil)
+						return
+					end
+				end
+				cfg.set(nil, nil)
+			end)
 
 			function cfg.update_color() 
 				local mouse = uis:GetMouseLocation() 
