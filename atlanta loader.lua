@@ -3915,23 +3915,40 @@ end)
 					PaddingLeft = dim(0, 4)
 				})
 				
-				local hex_input = library:create("TextBox", {
+				local hex_holder = library:create("Frame", {
 					Parent = main_holder_background,
-					Name = "hex_input",
+					Name = "hex_holder",
 					Position = dim2(0, 0, 1, -28),
 					Size = dim2(1, -20, 0, 16),
 					BorderColor3 = rgb(0, 0, 0),
-					BorderSizePixel = 1,
-					BackgroundColor3 = rgb(30, 30, 40),
+					BorderSizePixel = 0,
+					BackgroundColor3 = themes.preset.outline,
+				}) library:apply_theme(hex_holder, "outline", "BackgroundColor3")
+				local hex_inline = library:create("Frame", {
+					Parent = hex_holder,
+					Name = "hex_inline",
+					Position = dim2(0, 1, 0, 1),
+					Size = dim2(1, -2, 1, -2),
+					BorderColor3 = rgb(0, 0, 0),
+					BorderSizePixel = 0,
+					BackgroundColor3 = themes.preset.inline,
+				}) library:apply_theme(hex_inline, "inline", "BackgroundColor3")
+				local hex_input = library:create("TextBox", {
+					Parent = hex_inline,
+					Name = "hex_input",
+					Position = dim2(0, 1, 0, 1),
+					Size = dim2(1, -2, 1, -2),
+					BorderSizePixel = 0,
+					BackgroundTransparency = 1,
 					FontFace = library.font,
-					TextColor3 = rgb(220, 220, 220),
+					TextColor3 = themes.preset.text,
 					TextSize = 11,
 					Text = "#FFFFFF",
 					PlaceholderText = "#FFFFFF",
-					PlaceholderColor3 = rgb(100, 100, 100),
+					PlaceholderColor3 = themes.preset.text,
 					ClearTextOnFocus = false,
 					TextXAlignment = Enum.TextXAlignment.Center,
-				})
+				}) library:apply_theme(hex_input, "text", "TextColor3")
 
 				local alpha = library:create("TextButton", {
 					Parent = main_holder_background,
