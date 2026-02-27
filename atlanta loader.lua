@@ -247,20 +247,27 @@
 		library.font = Font.new(getcustomasset("Tahoma-Modern-Bold.json"), Enum.FontWeight.Bold)
 	end)
 	if not library.font then
-		writefile("ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
-		local arialBoldDescriptor = {
-			name = "ArialBold",
-			faces = {
-				{
-					name = "Bold",
-					weight = 700,
-					style = "normal",
-					assetId = getcustomasset("ArialBold.ttf")
+		pcall(function()
+			if type(writefile) == "function" and type(getcustomasset) == "function" then
+				writefile("ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
+				local arialBoldDescriptor = {
+					name = "ArialBold",
+					faces = {
+						{
+							name = "Bold",
+							weight = 700,
+							style = "normal",
+							assetId = getcustomasset("ArialBold.ttf")
+						}
+					}
 				}
-			}
-		}
-		writefile("ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
-		library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Bold)
+				writefile("ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
+				library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Bold)
+			end
+		end)
+	end
+	if not library.font then
+		library.font = Font.new("rbxasset://fonts/families/SourceSans.json")
 	end
 
 	local config_holder 
