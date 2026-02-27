@@ -1409,7 +1409,7 @@
 					Draggable = false,
 					Position = dim2(0, 50, 0, 200),
 					BorderColor3 = rgb(0, 0, 0),
-					Size = dim2(0, 182, 0, 25),
+					Size = dim2(0, 260, 0, 25),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline
 				})
@@ -4379,13 +4379,14 @@ end)
 					TextColor3 = themes.preset.text,
 					BorderColor3 = rgb(0, 0, 0),
 					Text = "[ Hold ]  Fly - X",
-					Size = dim2(1, -5, 0, 18),
+					Size = dim2(1, -10, 0, 18),
 					Visible = false, 
 					Position = dim2(0, 5, 0, -1),
 					BorderSizePixel = 0,
 					BackgroundTransparency = 1,
 					TextXAlignment = Enum.TextXAlignment.Left,
-					TextTruncate = Enum.TextTruncate.AtEnd,
+					TextTruncate = Enum.TextTruncate.None,
+					TextWrapped = true,
 					AutomaticSize = Enum.AutomaticSize.Y,
 					TextSize = 12,
 					BackgroundColor3 = themes.preset.text
@@ -4634,7 +4635,7 @@ end)
 						flags[cfg.flag]["mode"] = cfg.mode 
 						flags[cfg.flag]["key"] = cfg.key 
 
-						key_text.Text = string.lower(_text2)
+						key_text.Text = (_text2 and _text2 ~= "none") and string.lower(_text2) or "Set"
 
 						cfg.callback(cfg.active or false)
 					elseif find({"toggle", "hold", "always"}, input) then 
@@ -4660,7 +4661,7 @@ end)
 						local text = tostring(cfg.key) ~= "Enums" and (keys[cfg.key] or tostring(cfg.key):gsub("Enum.", "")) or nil
 						local __text = text and (tostring(text):gsub("KeyCode.", ""):gsub("UserInputType.", ""))
 						
-						key_text.Text = string.lower(__text) or "none"
+						key_text.Text = (__text and __text ~= "none") and string.lower(__text) or "Set"
 						cfg.key_name = __text
 					end 
 
@@ -4711,7 +4712,7 @@ end)
 
 				element_outline.MouseButton1Down:Connect(function()
 					task.wait()
-					key_text.Text = "none"	
+					key_text.Text = "..."	
 
 					if cfg.binding then return end 
 
