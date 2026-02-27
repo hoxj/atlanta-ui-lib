@@ -222,7 +222,11 @@
 	library.__index = library
 
 	for _, path in next, library.folders do 
-		makefolder(library.directory .. path)
+		pcall(function()
+			if type(makefolder) == "function" then
+				makefolder(library.directory .. path)
+			end
+		end)
 	end 
 
 	-- Tahoma Modern Bold for menu (fallback to Arial Bold if download fails)
