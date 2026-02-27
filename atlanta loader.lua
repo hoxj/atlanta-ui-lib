@@ -225,24 +225,39 @@
 		makefolder(library.directory .. path)
 	end 
 
-	-- Arial Bold from atlanta-ui-lib (raw GitHub)
-	writefile("ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
-
-	local arialBoldDescriptor = {
-		name = "ArialBold",
-		faces = {
-			{
-				name = "Bold",
-				weight = 700,
-				style = "normal",
-				assetId = getcustomasset("ArialBold.ttf")
+	-- Tahoma Modern Bold for menu (fallback to Arial Bold if download fails)
+	pcall(function()
+		writefile("Tahoma-Modern-Bold.ttf", game:HttpGet("https://raw.githubusercontent.com/i77lhm/storage/refs/heads/main/fonts/Tahoma-Modern-Bold.ttf"))
+		local tahomaDescriptor = {
+			name = "TahomaModernBold",
+			faces = {
+				{
+					name = "Bold",
+					weight = 700,
+					style = "normal",
+					assetId = getcustomasset("Tahoma-Modern-Bold.ttf")
+				}
 			}
 		}
-	}
-
-	writefile("ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
-
-	library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Bold)
+		writefile("Tahoma-Modern-Bold.json", http_service:JSONEncode(tahomaDescriptor))
+		library.font = Font.new(getcustomasset("Tahoma-Modern-Bold.json"), Enum.FontWeight.Bold)
+	end)
+	if not library.font then
+		writefile("ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
+		local arialBoldDescriptor = {
+			name = "ArialBold",
+			faces = {
+				{
+					name = "Bold",
+					weight = 700,
+					style = "normal",
+					assetId = getcustomasset("ArialBold.ttf")
+				}
+			}
+		}
+		writefile("ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
+		library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Bold)
+	end
 
 	local config_holder 
 -- 
@@ -2607,6 +2622,7 @@ end)
 				flashing = false, 
 				text_color = properties.text_color or nil,
 				rich_text = properties.rich_text or false,
+				font_enum = properties.font_enum or nil,
 			}
 		
 			-- Instances
@@ -2651,10 +2667,9 @@ end)
 					}
 				})
 		
-				local text = library:create("TextLabel", {
+				local textProps = {
 					Parent = watermark_background,
 					Name = "",
-					FontFace = library.font,
 					TextColor3 = cfg.text_color or themes.preset.text,
 					BorderColor3 = rgb(0, 0, 0),
 					Text = "  " .. cfg.text .. "  ",
@@ -2666,7 +2681,13 @@ end)
 					AutomaticSize = Enum.AutomaticSize.X,
 					TextSize = 12,
 					BackgroundColor3 = rgb(255, 255, 255)
-				})
+				}
+				if cfg.font_enum then
+					textProps.Font = cfg.font_enum
+				else
+					textProps.FontFace = library.font
+				end
+				local text = library:create("TextLabel", textProps)
 		
 				local accent = library:create("Frame", {
 					Parent = watermark_outline,
