@@ -225,23 +225,24 @@
 		makefolder(library.directory .. path)
 	end 
 
-	writefile("ffff.ttf", game:HttpGet("https://github.com/weasely111/beta/raw/refs/heads/main/fs-tahoma-8px.ttf"))
+	-- Arial Bold from atlanta-ui-lib (raw GitHub)
+	writefile("ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
 
-	local tahoma = {
-		name = "SmallestPixel7",
+	local arialBoldDescriptor = {
+		name = "ArialBold",
 		faces = {
 			{
-				name = "Regular",
-				weight = 400,
+				name = "Bold",
+				weight = 700,
 				style = "normal",
-				assetId = getcustomasset("ffff.ttf")
+				assetId = getcustomasset("ArialBold.ttf")
 			}
 		}
 	}
 
-	writefile("dddd.ttf", http_service:JSONEncode(tahoma))
+	writefile("ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
 
-	library.font = Font.new(getcustomasset("dddd.ttf"), Enum.FontWeight.Regular)
+	library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Bold)
 
 	local config_holder 
 -- 
