@@ -4341,7 +4341,7 @@ local offset = (a > 0) and 0 or -4
 				flags[cfg.flag]["Color"] = Color
 			flags[cfg.flag]["Transparency"] = 1 - a
 					hex_input.Text = string.format("#%02X%02X%02X", math.floor(Color.R * 255 + 0.5), math.floor(Color.G * 255 + 0.5), math.floor(Color.B * 255 + 0.5))
-				end)
+			end
 			
 				cfg.callback(Color, a)
 			end
