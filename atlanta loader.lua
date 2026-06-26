@@ -1930,9 +1930,55 @@ end)
 				local main_holder = section.holder
 				local playerlist = section:playerlist({})
 				section.holder = playerlist.actions_holder
-				section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
+				local prio_dropdown = section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
 					library.prioritize(text)
 				end})
+
+				if prio_dropdown and prio_dropdown.left_holder then
+					local wrapper = setmetatable({ right_holder = prio_dropdown.left_holder }, { __index = library })
+					
+					wrapper:colorpicker({
+						name = "Enemy Color",
+						flag = "ESP_Enemy_Color",
+						color = rgb(255, 0, 0),
+						callback = function(val)
+							if playerlist and playerlist.patterns then
+								playerlist.patterns["Enemy"] = val
+							end
+							if playerlist and playerlist.refresh_player_colors then
+								playerlist.refresh_player_colors()
+							end
+						end
+					})
+					
+					wrapper:colorpicker({
+						name = "Priority Color",
+						flag = "ESP_Priority_Color",
+						color = rgb(255, 255, 0),
+						callback = function(val)
+							if playerlist and playerlist.patterns then
+								playerlist.patterns["Priority"] = val
+							end
+							if playerlist and playerlist.refresh_player_colors then
+								playerlist.refresh_player_colors()
+							end
+						end
+					})
+					
+					wrapper:colorpicker({
+						name = "Friendly Color",
+						flag = "ESP_Friendly_Color",
+						color = hex("23ff0a"),
+						callback = function(val)
+							if playerlist and playerlist.patterns then
+								playerlist.patterns["Friendly"] = val
+							end
+							if playerlist and playerlist.refresh_player_colors then
+								playerlist.refresh_player_colors()
+							end
+						end
+					})
+				end
 				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
 				section:button_holder({})
 				section:button({name = "Set as target", callback = function()
@@ -2405,24 +2451,33 @@ end)
 				
 				-- Healthbar
 					objects[ "healthbar_holder" ] = library:create( "Frame" , {
-						AnchorPoint = vec2(1, 0);
+						AnchorPoint = vec2(0, 0);
 						Parent = objects[ "holder" ];
-						Name = "\0";
-						Position = dim2(0, -8, 0, 0);
+						Name = "HealthBarOutline";
 						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(0, 4, 1, 0);
 						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
+						BackgroundColor3 = rgb(0, 0, 0);
+						Visible = false;
+					});
+					
+					objects[ "healthbar_container" ] = library:create( "Frame" , {
+						Parent = objects[ "healthbar_holder" ];
+						Name = "HealthBarContainer";
+						BackgroundTransparency = 1;
+						ClipsDescendants = true;
+						BorderSizePixel = 0;
 					});
 					
 					objects[ "healthbar" ] = library:create( "Frame" , {
-						Parent = objects[ "healthbar_holder" ];
-						Name = "\0";
-						Position = dim2(0, 1, 0, 1);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, -2);
+						Parent = objects[ "healthbar_container" ];
+						Name = "HealthBar";
 						BorderSizePixel = 0;
 						BackgroundColor3 = rgb(255, 255, 255)
+					});
+
+					objects[ "healthbar_gradient" ] = library:create( "UIGradient" , {
+						Parent = objects[ "healthbar" ];
+						Rotation = 90;
 					});
 				--
 				objects[ "box_fill" ] = library:create( "Frame" , {
@@ -2434,7 +2489,7 @@ end)
 					BackgroundTransparency = 0.15;
 					BackgroundColor3 = rgb(255, 255, 255)
 				});
-				local box_fill_grad = library:create( "UIGradient" , { Parent = objects[ "box_fill" ]; Rotation = -90 });
+				local box_fill_grad = library:create( "UIGradient" , { Parent = objects[ "box_fill" ]; Rotation = -270 });
 				--
 				objects[ "health_text" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
@@ -2456,13 +2511,13 @@ end)
 					TextColor3 = flag_color("esp_flag_innocent");
 					Text = "Innocent";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(1, 0);
+					AnchorPoint = vec2(0, 0);
 					AutomaticSize = Enum.AutomaticSize.XY;
 					BackgroundTransparency = 1;
-					Position = dim2(1, -16, 0, 2);
+					Position = dim2(1, 5, 0, 0);
 					BorderSizePixel = 0;
 					TextSize = 12;
-					TextXAlignment = Enum.TextXAlignment.Right;
+					TextXAlignment = Enum.TextXAlignment.Left;
 				});
 				--
 				objects[ "team_flag" ] = library:create( "TextLabel" , {
@@ -2471,13 +2526,13 @@ end)
 					TextColor3 = rgb(255, 200, 100);
 					Text = "Inmates";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(1, 0);
+					AnchorPoint = vec2(0, 0);
 					AutomaticSize = Enum.AutomaticSize.XY;
 					BackgroundTransparency = 1;
-					Position = dim2(1, -16, 0, 20);
+					Position = dim2(1, 5, 0, 14);
 					BorderSizePixel = 0;
 					TextSize = 12;
-					TextXAlignment = Enum.TextXAlignment.Right;
+					TextXAlignment = Enum.TextXAlignment.Left;
 				});
 				--
 
@@ -2518,26 +2573,152 @@ end)
 						TextSize = 12;
 					});
 				--  
+
+				-- Ammo esp
+					objects[ "ammobar_holder" ] = library:create( "Frame" , {
+						AnchorPoint = vec2(0, 0);
+						Parent = objects[ "holder" ];
+						Name = "AmmoBarOutline";
+						BorderColor3 = rgb(0, 0, 0);
+						BorderSizePixel = 0;
+						BackgroundColor3 = rgb(0, 0, 0);
+						Visible = false;
+					});
+					
+					objects[ "ammobar_container" ] = library:create( "Frame" , {
+						Parent = objects[ "ammobar_holder" ];
+						Name = "AmmoBarContainer";
+						BackgroundTransparency = 1;
+						ClipsDescendants = true;
+						BorderSizePixel = 0;
+					});
+					
+					objects[ "ammobar" ] = library:create( "Frame" , {
+						Parent = objects[ "ammobar_container" ];
+						Name = "AmmoBar";
+						BorderSizePixel = 0;
+						BackgroundColor3 = rgb(255, 215, 60);
+					});
+					
+					objects[ "ammo_text" ] = library:create( "TextLabel" , {
+						FontFace = library.font;
+						TextColor3 = flag_color("esp_ammo_text_color");
+						BorderColor3 = rgb(0, 0, 0);
+						Text = "30/30";
+						Parent = objects[ "holder" ];
+						TextStrokeTransparency = 0;
+						Name = "\0";
+						Size = dim2(1, 0, 0, 0);
+						BackgroundTransparency = 1;
+						Position = dim2(0.5, 0, 1, 3);
+						AnchorPoint = vec2(0.5, 0);
+						BorderSizePixel = 0;
+						AutomaticSize = Enum.AutomaticSize.Y;
+						TextSize = 12;
+					});
 			end 
 
 			cfg.change_health = function()
-				if not flag_bool("esp_healthbar") or not objects[ "healthbar_holder" ].Parent or objects[ "healthbar_holder" ].Parent ~= objects[ "holder" ] then return end
 				local st = get_settings and get_settings()
 				local smooth = (st and st.HealthSmooth) or 0.05
 				local barW = (st and st.HealthBarWidth) or 3
-				local target = 0.5 + 0.5 * math.sin(tick() * 2)
-				cfg._health_prev = (cfg._health_prev or target) + (target - (cfg._health_prev or target)) * math.min(smooth * 30, 1)
-				local mult = math.clamp(cfg._health_prev, 0, 1)
-				local lowC = flag_color("esp_health_low")
-				local highC = flag_color("esp_health_high")
-				local midC = flag_color("esp_health_mid")
-				local color = mult > 0.5 and (midC:Lerp(highC, (mult - 0.5) * 2)) or (lowC:Lerp(midC, mult * 2))
-				objects[ "healthbar" ].Size = UDim2.new(1, 0, mult, 0)
-				objects[ "healthbar" ].Position = UDim2.new(0, 0, 1 - mult, 0)
-				objects[ "healthbar" ].BackgroundColor3 = color
-				if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] then
-					objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-					objects[ "health_text" ].Position = dim2(0, - (barW + 4), 1 - mult, 0)
+				local textSize = (st and st.TextSize) or 14
+				local lineH = math.max(12, textSize - 2) + 4
+				
+				-- Health Bar updates
+				local fullH = 190
+				if flag_bool("esp_healthbar") and objects[ "healthbar_holder" ].Parent == objects[ "holder" ] then
+					local target = 0.5 + 0.5 * math.sin(tick() * 2)
+					cfg._health_prev = (cfg._health_prev or target) + (target - (cfg._health_prev or target)) * math.min(smooth * 30, 1)
+					local mult = math.clamp(cfg._health_prev, 0, 1)
+					
+					local lowC = flag_color("esp_health_low")
+					local highC = flag_color("esp_health_high")
+					local midC = flag_color("esp_health_mid")
+					
+					if objects[ "healthbar_gradient" ] then
+						objects[ "healthbar_gradient" ].Color = ColorSequence.new({
+							ColorSequenceKeypoint.new(0, highC),
+							ColorSequenceKeypoint.new(0.5, midC),
+							ColorSequenceKeypoint.new(1, lowC),
+						})
+						objects[ "healthbar_gradient" ].Rotation = 90
+					end
+					
+					local barHeight = math.max(math.floor((fullH + 1) * mult), 1)
+					local visibleHeight = math.min(barHeight, fullH)
+					
+					objects[ "healthbar_holder" ].Size = UDim2.fromOffset(barW + 2, visibleHeight + 2)
+					objects[ "healthbar_holder" ].Position = UDim2.fromOffset(- (barW + 4), fullH - visibleHeight - 1)
+					objects[ "healthbar_holder" ].Visible = true
+					
+					objects[ "healthbar_container" ].Size = UDim2.fromOffset(barW, visibleHeight)
+					objects[ "healthbar_container" ].Position = UDim2.fromOffset(1, 1)
+					
+					objects[ "healthbar" ].Size = UDim2.fromOffset(barW, fullH + 1)
+					objects[ "healthbar" ].Position = UDim2.fromOffset(0, -((fullH + 1) - barHeight))
+					
+					if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] and flag_bool("esp_healthtext") then
+						objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
+						local topOfFillY = fullH - barHeight
+						local textY = math.clamp(topOfFillY, 7, fullH - 7)
+						objects[ "health_text" ].Position = dim2(0, - (barW + 6), 0, textY)
+						objects[ "health_text" ].Visible = true
+					else
+						if objects[ "health_text" ] then objects[ "health_text" ].Visible = false end
+					end
+				else
+					objects[ "healthbar_holder" ].Visible = false
+					if objects[ "health_text" ] then objects[ "health_text" ].Visible = false end
+				end
+				
+				-- Ammo ESP updates
+				local ammoTarget = 0.5 + 0.5 * math.sin(tick() * 1.5)
+				cfg._ammo_prev = (cfg._ammo_prev or ammoTarget) + (ammoTarget - (cfg._ammo_prev or ammoTarget)) * 0.1
+				local ammoRatio = math.clamp(cfg._ammo_prev, 0, 1)
+				local maxAmmo = 30
+				local currentAmmo = math.floor(ammoRatio * maxAmmo)
+				local ammoTextStr = string.format("%d/%d", currentAmmo, maxAmmo)
+				
+				local currentY = 3
+				
+				if flag_bool("esp_ammobar") and objects[ "ammobar_holder" ].Parent == objects[ "holder" ] then
+					local boxWidth = 135
+					local barWidth = math.max(math.floor(boxWidth * ammoRatio), 1)
+					
+					objects[ "ammobar_holder" ].Size = UDim2.fromOffset(barWidth + 2, barW + 2)
+					objects[ "ammobar_holder" ].Position = UDim2.new(0, -1, 1, currentY)
+					objects[ "ammobar_holder" ].Visible = true
+					
+					objects[ "ammobar_container" ].Size = UDim2.fromOffset(barWidth, barW)
+					objects[ "ammobar_container" ].Position = UDim2.fromOffset(1, 1)
+					
+					objects[ "ammobar" ].Size = UDim2.fromOffset(barWidth, barW)
+					objects[ "ammobar" ].Position = UDim2.fromOffset(0, 0)
+					objects[ "ammobar" ].BackgroundColor3 = flag_color("esp_ammo_bar_color")
+					
+					currentY = currentY + barW + 2 + 2
+				else
+					objects[ "ammobar_holder" ].Visible = false
+				end
+				
+				if flag_bool("esp_ammotext") and objects[ "ammo_text" ].Parent == objects[ "holder" ] then
+					objects[ "ammo_text" ].Text = ammoTextStr
+					objects[ "ammo_text" ].TextColor3 = flag_color("esp_ammo_text_color")
+					objects[ "ammo_text" ].Position = dim2(0.5, 0, 1, currentY)
+					objects[ "ammo_text" ].Visible = true
+					currentY = currentY + lineH
+				else
+					objects[ "ammo_text" ].Visible = false
+				end
+				
+				if flag_bool("esp_distance") and objects[ "distance" ].Parent == objects[ "holder" ] then
+					objects[ "distance" ].Position = dim2(0.5, 0, 1, currentY)
+					currentY = currentY + lineH
+				end
+				
+				if flag_bool("esp_weapon") and objects[ "weapon" ].Parent == objects[ "holder" ] then
+					objects[ "weapon" ].Position = dim2(0.5, 0, 1, currentY)
 				end
 			end
 
@@ -2572,48 +2753,58 @@ end)
 				objects["weapon"].TextSize = math.max(8, textSize - 2)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
 
-				local lineH = math.max(12, textSize - 2) + 4
-				local flagPadRight = -16
-				local flagPadTop = 2
-				local distanceYOffset = 5
-				local weaponYOffset = distanceYOffset + (flag_bool("esp_distance") and lineH or 0)
-
-				objects["distance"].Position = dim2(0.5, 0, 1, distanceYOffset)
-				objects["weapon"].Position = dim2(0.5, 0, 1, weaponYOffset)
+				-- Ammo bar & text setup
+				objects["ammobar_holder"].Visible = flag_bool("esp_ammobar")
+				safe_set_parent(objects["ammobar_holder"], flag_bool("esp_ammobar") and objects["holder"] or library.cache)
+				
+				objects["ammo_text"].Visible = flag_bool("esp_ammotext")
+				safe_set_parent(objects["ammo_text"], flag_bool("esp_ammotext") and objects["holder"] or library.cache)
+				objects["ammo_text"].TextColor3 = flag_color("esp_ammo_text_color")
+				objects["ammo_text"].TextSize = math.max(8, textSize - 2)
+				if objects["ammo_text"].FontFace then objects["ammo_text"].FontFace = fontFace end
 
 				objects["healthbar_holder"].Visible = flag_bool("esp_healthbar")
 				safe_set_parent(objects["healthbar_holder"], flag_bool("esp_healthbar") and objects["holder"] or library.cache)
-				objects["healthbar_holder"].Size = dim2(0, barW, 1, 0)
-				objects["healthbar_holder"].Position = dim2(0, - (barW + 2), 0, 0)
 
 				objects["health_text"].Visible = flag_bool("esp_healthtext")
 				safe_set_parent(objects["health_text"], flag_bool("esp_healthtext") and objects["holder"] or library.cache)
 				objects["health_text"].TextColor3 = flag_color("esp_healthtext_color")
 				objects["health_text"].TextSize = math.max(8, textSize - 2)
-				objects["health_text"].Position = dim2(0, - (barW + 4), 0.5, 0)
 				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
 
 				local flagLineH = math.max(12, textSize - 2) + 2
-				local flagY = -5
-				objects["flag"].Visible = flag_bool("esp_flags")
-				safe_set_parent(objects["flag"], flag_bool("esp_flags") and objects["holder"] or library.cache)
-				objects["flag"].Position = dim2(1, 5, 0, flagY)
-				flagY = flagY + flagLineH
-				objects["team_flag"].Position = dim2(1, 5, 0, flagY)
-				safe_set_parent(objects["flag"], flag_bool("esp_flags") and objects["holder"] or library.cache)
-				objects["flag"].TextColor3 = flag_color("esp_flag_innocent")
-				objects["flag"].TextSize = math.max(8, textSize - 2)
-				objects["flag"].Position = dim2(1, flagPadRight, 0, flagPadTop)
-				if objects["flag"].FontFace then objects["flag"].FontFace = fontFace end
+				local flagY = -1
 
-				objects["team_flag"].Visible = flag_bool("esp_team_flag")
-				safe_set_parent(objects["team_flag"], flag_bool("esp_team_flag") and objects["holder"] or library.cache)
-				objects["team_flag"].TextSize = math.max(8, textSize - 2)
-				objects["team_flag"].Position = dim2(1, flagPadRight, 0, flagPadTop + lineH)
-				if st and st.FlagTeamInmatesColor then
-					objects["team_flag"].TextColor3 = type(st.FlagTeamInmatesColor) == "table" and st.FlagTeamInmatesColor.Color or st.FlagTeamInmatesColor
+				if flag_bool("esp_flags") then
+					objects["flag"].Visible = true
+					safe_set_parent(objects["flag"], objects["holder"])
+					objects["flag"].TextColor3 = flag_color("esp_flag_innocent")
+					objects["flag"].TextSize = math.max(8, textSize - 2)
+					objects["flag"].AnchorPoint = vec2(0, 0)
+					objects["flag"].Position = dim2(1, 5, 0, flagY)
+					objects["flag"].TextXAlignment = Enum.TextXAlignment.Left
+					if objects["flag"].FontFace then objects["flag"].FontFace = fontFace end
+					flagY = flagY + flagLineH
+				else
+					objects["flag"].Visible = false
+					safe_set_parent(objects["flag"], library.cache)
 				end
-				if objects["team_flag"].FontFace then objects["team_flag"].FontFace = fontFace end
+
+				if flag_bool("esp_team_flag") then
+					objects["team_flag"].Visible = true
+					safe_set_parent(objects["team_flag"], objects["holder"])
+					objects["team_flag"].TextSize = math.max(8, textSize - 2)
+					objects["team_flag"].AnchorPoint = vec2(0, 0)
+					objects["team_flag"].Position = dim2(1, 5, 0, flagY)
+					objects["team_flag"].TextXAlignment = Enum.TextXAlignment.Left
+					if st and st.FlagTeamInmatesColor then
+						objects["team_flag"].TextColor3 = type(st.FlagTeamInmatesColor) == "table" and st.FlagTeamInmatesColor.Color or st.FlagTeamInmatesColor
+					end
+					if objects["team_flag"].FontFace then objects["team_flag"].FontFace = fontFace end
+				else
+					objects["team_flag"].Visible = false
+					safe_set_parent(objects["team_flag"], library.cache)
+				end
 
 				if flag_bool("esp_box") then
 					safe_set_parent(objects["box_handler"], objects["holder"])
@@ -2654,6 +2845,9 @@ end)
 						cfg.preview_highlight.OutlineTransparency = type(st.HighlightOutlineTransparency) == "number" and st.HighlightOutlineTransparency or 0
 					end
 				end
+				
+				-- Run dynamic layout update instantly on refresh
+				cfg.change_health()
 			end
 
 			task.spawn(function()
@@ -4878,9 +5072,11 @@ end)
 						Position = dim2(0, 2, 0, -1),
 						BorderColor3 = rgb(0, 0, 0),
 						Size = dim2(0, 0, 0, 14),
+						AutomaticSize = Enum.AutomaticSize.X,
 						BorderSizePixel = 0,
 						BackgroundColor3 = rgb(255, 255, 255)
 					})
+					cfg["left_holder"] = left_components
 
 					main_text = library:create("TextLabel", {
 						Parent = left_components,
@@ -5970,7 +6166,6 @@ end)
 				["Friendly"] = hex("23ff0a")
 			}
 
-			-- elements: player list at top first
 				local playerlist_holder = library:create("TextLabel", {
 					Parent = self.holder,
 					Name = "",
@@ -6118,7 +6313,7 @@ end)
 				local key = playerObj.Team.Name:lower():gsub("%s+", "")
 				return team_colors[key] or themes.preset.text
 			end
-			-- Sort order: Guards first (0), then Inmates (1), then Criminals (2), then others (3)
+
 			local function get_team_sort_order(playerObj)
 				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return 3 end
 				local key = playerObj.Team.Name:lower():gsub("%s+", "")
@@ -6138,7 +6333,10 @@ end)
 					local f = library.flags["ESP_Friendly_Color"]
 					return type(f) == "table" and f.Color or f
 				end
-				if path.priority == "Priority" then return patterns["Priority"] end
+				if path.priority == "Priority" then
+					local f = library.flags["ESP_Priority_Color"]
+					return f and (type(f) == "table" and f.Color or f) or patterns["Priority"]
+				end
 				return path.team_color or themes.preset.text
 			end
 			function cfg.create_player(player) 
@@ -6183,32 +6381,7 @@ end)
 					LayoutOrder = -100, 
 					BackgroundColor3 = rgb(255, 255, 255)
 				}) 
-								
-				-- local TextLabel = library:create("TextLabel", {
-				--     Parent = TextButton,
-				--     Name = "",
-				--     FontFace = library.font,
-				--     TextColor3 = themes.preset.text,
-				--     BorderColor3 = rgb(0, 0, 0),
-				--     Text = "None",
-				--     BackgroundTransparency = 1,
-				--     TextXAlignment = Enum.TextXAlignment.Left,
-				--     BorderSizePixel = 0,
-				--     AutomaticSize = Enum.AutomaticSize.Y,
-				--     TextSize = 12,
-				--     BackgroundColor3 = rgb(255, 255, 255)
-				-- })
-								
-				-- local Frame = library:create("Frame", {
-				--     Parent = TextLabel,
-				--     Name = "",
-				--     Position = dim2(0, -10, 0, 0),
-				--     BorderColor3 = rgb(0, 0, 0),
-				--     Size = dim2(0, 1, 0, 12),
-				--     BorderSizePixel = 0,
-				--     BackgroundColor3 = themes.preset.outline
-				-- }) library:apply_theme(main_holder, "outline", "BackgroundColor3") 
-				
+			
 				local priority_text = library:create("TextLabel", {
 					Parent = TextButton,
 					Name = "",
@@ -6527,6 +6700,16 @@ end)
 				HorizontalAlignment = Enum.HorizontalAlignment.Right
 			})
 			cfg.actions_holder = actions_holder
+			cfg.patterns = patterns
+			cfg.refresh_player_colors = function()
+				for name, path in pairs(library.playerlist_data) do
+					if typeof(path) == "table" and path.player_name and selected_button ~= path.player_name then
+						path.player_name.TextColor3 = get_display_color(path)
+					end
+				end
+			end
+			library.refresh_player_colors = cfg.refresh_player_colors
+			library.patterns = patterns
 
 			return setmetatable(cfg, library)
 		end 
