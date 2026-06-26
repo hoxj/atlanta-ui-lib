@@ -229,7 +229,7 @@
 		end)
 	end 
 
-	-- Tahoma Modern Bold for menu (fallback to Arial Bold if download fails)
+	
 	pcall(function()
 		writefile("Tahoma-Modern-Bold.ttf", game:HttpGet("https://raw.githubusercontent.com/i77lhm/storage/refs/heads/main/fonts/Tahoma-Modern-Bold.ttf"))
 		local tahomaDescriptor = {
