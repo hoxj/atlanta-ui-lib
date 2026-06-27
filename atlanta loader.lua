@@ -2660,8 +2660,7 @@ end)
 					
 					if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] and flag_bool("esp_healthtext") then
 						objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-						local topOfFillY = fullH - barHeight
-						local textY = math.clamp(topOfFillY, 7, fullH - 7)
+						local textY = fullH - visibleHeight - 1
 						objects[ "health_text" ].Position = dim2(0, - (barW + 6), 0, textY)
 						objects[ "health_text" ].Visible = true
 					else
@@ -2674,7 +2673,7 @@ end)
 				
 				-- Ammo ESP updates
 				local ammoTarget = 0.5 + 0.5 * math.sin(tick() * 1.5)
-				cfg._ammo_prev = (cfg._ammo_prev or ammoTarget) + (ammoTarget - (cfg._ammo_prev or ammoTarget)) * 0.1
+				cfg._ammo_prev = (cfg._ammo_prev or ammoTarget) + (ammoTarget - (cfg._ammo_prev or ammoTarget)) * math.min(smooth * 30, 1)
 				local ammoRatio = math.clamp(cfg._ammo_prev, 0, 1)
 				local maxAmmo = 30
 				local currentAmmo = math.floor(ammoRatio * maxAmmo)
@@ -2682,7 +2681,7 @@ end)
 				
 				local currentY = 3
 				
-				if flag_bool("esp_ammobar") and objects[ "ammobar_holder" ].Parent == objects[ "holder" ] then
+				if flag_bool("esp_ammo_bar") and objects[ "ammobar_holder" ].Parent == objects[ "holder" ] then
 					local boxWidth = 135
 					local barWidth = math.max(math.floor(boxWidth * ammoRatio), 1)
 					
@@ -2702,7 +2701,7 @@ end)
 					objects[ "ammobar_holder" ].Visible = false
 				end
 				
-				if flag_bool("esp_ammotext") and objects[ "ammo_text" ].Parent == objects[ "holder" ] then
+				if flag_bool("esp_ammo_text") and objects[ "ammo_text" ].Parent == objects[ "holder" ] then
 					objects[ "ammo_text" ].Text = ammoTextStr
 					objects[ "ammo_text" ].TextColor3 = flag_color("esp_ammo_text_color")
 					objects[ "ammo_text" ].Position = dim2(0.5, 0, 1, currentY)
@@ -2754,11 +2753,11 @@ end)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
 
 				-- Ammo bar & text setup
-				objects["ammobar_holder"].Visible = flag_bool("esp_ammobar")
-				safe_set_parent(objects["ammobar_holder"], flag_bool("esp_ammobar") and objects["holder"] or library.cache)
+				objects["ammobar_holder"].Visible = flag_bool("esp_ammo_bar")
+				safe_set_parent(objects["ammobar_holder"], flag_bool("esp_ammo_bar") and objects["holder"] or library.cache)
 				
-				objects["ammo_text"].Visible = flag_bool("esp_ammotext")
-				safe_set_parent(objects["ammo_text"], flag_bool("esp_ammotext") and objects["holder"] or library.cache)
+				objects["ammo_text"].Visible = flag_bool("esp_ammo_text")
+				safe_set_parent(objects["ammo_text"], flag_bool("esp_ammo_text") and objects["holder"] or library.cache)
 				objects["ammo_text"].TextColor3 = flag_color("esp_ammo_text_color")
 				objects["ammo_text"].TextSize = math.max(8, textSize - 2)
 				if objects["ammo_text"].FontFace then objects["ammo_text"].FontFace = fontFace end
@@ -2773,7 +2772,7 @@ end)
 				if objects["health_text"].FontFace then objects["health_text"].FontFace = fontFace end
 
 				local flagLineH = math.max(12, textSize - 2) + 2
-				local flagY = -1
+				local flagY = -2
 
 				if flag_bool("esp_flags") then
 					objects["flag"].Visible = true
@@ -6166,6 +6165,7 @@ end)
 				["Friendly"] = hex("23ff0a")
 			}
 
+			-- elements: player list at top first
 				local playerlist_holder = library:create("TextLabel", {
 					Parent = self.holder,
 					Name = "",
@@ -6313,7 +6313,7 @@ end)
 				local key = playerObj.Team.Name:lower():gsub("%s+", "")
 				return team_colors[key] or themes.preset.text
 			end
-
+			-- Sort order: Guards first (0), then Inmates (1), then Criminals (2), then others (3)
 			local function get_team_sort_order(playerObj)
 				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return 3 end
 				local key = playerObj.Team.Name:lower():gsub("%s+", "")
@@ -6381,7 +6381,32 @@ end)
 					LayoutOrder = -100, 
 					BackgroundColor3 = rgb(255, 255, 255)
 				}) 
-			
+								
+				-- local TextLabel = library:create("TextLabel", {
+				--     Parent = TextButton,
+				--     Name = "",
+				--     FontFace = library.font,
+				--     TextColor3 = themes.preset.text,
+				--     BorderColor3 = rgb(0, 0, 0),
+				--     Text = "None",
+				--     BackgroundTransparency = 1,
+				--     TextXAlignment = Enum.TextXAlignment.Left,
+				--     BorderSizePixel = 0,
+				--     AutomaticSize = Enum.AutomaticSize.Y,
+				--     TextSize = 12,
+				--     BackgroundColor3 = rgb(255, 255, 255)
+				-- })
+								
+				-- local Frame = library:create("Frame", {
+				--     Parent = TextLabel,
+				--     Name = "",
+				--     Position = dim2(0, -10, 0, 0),
+				--     BorderColor3 = rgb(0, 0, 0),
+				--     Size = dim2(0, 1, 0, 12),
+				--     BorderSizePixel = 0,
+				--     BackgroundColor3 = themes.preset.outline
+				-- }) library:apply_theme(main_holder, "outline", "BackgroundColor3") 
+				
 				local priority_text = library:create("TextLabel", {
 					Parent = TextButton,
 					Name = "",
