@@ -1925,25 +1925,12 @@ end)
 				
 				local items = holder.items
 
-				library:create("UIListLayout", {
-					Parent = items.holder,
-					FillDirection = Enum.FillDirection.Horizontal,
-					HorizontalFlex = Enum.UIFlexAlignment.Fill,
-					Padding = dim(0, 6),
-					SortOrder = Enum.SortOrder.LayoutOrder
-				})
-
-				local column1 = setmetatable(items, library):column()
-				local details_section = column1:section({name = "Details & Controls"})
-
-				local column2 = setmetatable(items, library):column()
-				local list_section = column2:section({name = "Players"})
-
-				local playerlist = list_section:playerlist({
-					details_parent = details_section.holder
-				})
-
-				local prio_dropdown = details_section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
+				local column = setmetatable(items, library):column() 
+				local section = column:section({name = "Playerlist"})
+				local main_holder = section.holder
+				local playerlist = section:playerlist({})
+				section.holder = playerlist.actions_holder
+				local prio_dropdown = section:dropdown({name = "Priority", items = {"Enemy", "Priority", "Neutral", "Friendly"}, default = "Neutral", flag = "PLAYERLIST_DROPDOWN", callback = function(text)
 					library.prioritize(text)
 				end})
 
@@ -1992,9 +1979,9 @@ end)
 						end
 					})
 				end
-				details_section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
-				details_section:button_holder({})
-				details_section:button({name = "Set as target", callback = function()
+				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
+				section:button_holder({})
+				section:button({name = "Set as target", callback = function()
 					if not library.selected_player then return end
 					if library.current_target == library.selected_player then
 						local playerName = library.current_target
@@ -2013,8 +2000,8 @@ end)
 						library.prioritize("Priority")
 					end
 				end})
-				details_section:button_holder({})
-				details_section:button({name = "View", callback = function()
+				section:button_holder({})
+				section:button({name = "View", callback = function()
 					if not library.selected_player then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if library.viewing_player == library.selected_player then
@@ -2027,8 +2014,8 @@ end)
 						if h then ws.CurrentCamera.CameraSubject = h library.viewing_player = library.selected_player end
 					end
 				end})
-				details_section:button_holder({})
-				details_section:button({name = "Teleport", callback = function()
+				section:button_holder({})
+				section:button({name = "Teleport", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if not p or not p.Character then return end
@@ -2048,9 +2035,10 @@ end)
 						end)
 					end)
 				end})
-				details_section:button_holder({})
-				details_section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
-				details_section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = hex("23ff0a"), callback = function(c) end})
+				section.holder = main_holder
+				section:button_holder({})
+				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
+				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = hex("23ff0a"), callback = function(c) end})
 			--  
 
 			return setmetatable(window, library)
@@ -6177,38 +6165,158 @@ end)
 				["Friendly"] = hex("23ff0a")
 			}
 
-			-- elements: player list is parented directly to self.holder 
+			-- elements: player list at top first
+				local playerlist_holder = library:create("TextLabel", {
+					Parent = self.holder,
+					Name = "",
+					FontFace = library.font,
+					TextColor3 = themes.preset.text,
+					BorderColor3 = rgb(0, 0, 0),
+					Text = "",
+					ZIndex = 2,
+					Size = dim2(1, -8, 0, 12),
+					BorderSizePixel = 0,
+					BackgroundTransparency = 1,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					AutomaticSize = Enum.AutomaticSize.Y,
+					TextYAlignment = Enum.TextYAlignment.Top,
+					TextSize = 12,
+					BackgroundColor3 = rgb(255, 255, 255),
+					LayoutOrder = 0
+				})
+				
+				local UIPadding = library:create("UIPadding", {
+					Parent = playerlist_holder,
+					Name = "",
+					PaddingBottom = dim(0, -2),
+					PaddingLeft = dim(0, 1)
+				})
+				
+				local UIStroke = library:create("UIStroke", {
+					Parent = playerlist_holder,
+					Name = ""
+				})
+				
+				local bottom_components = library:create("Frame", {
+					Parent = playerlist_holder,
+					Name = "",
+					BorderColor3 = rgb(0, 0, 0),
+					Size = dim2(1, 26, 0, 0),
+					BorderSizePixel = 0,
+					BackgroundColor3 = rgb(255, 255, 255)
+				})
+				
+				library:create("UIListLayout", {
+					Parent = bottom_components,
+					Name = "",
+					Padding = dim(0, 10),
+					SortOrder = Enum.SortOrder.LayoutOrder
+				})
+				
+				local list = library:create("Frame", {
+					Parent = bottom_components,
+					Name = "",
+					Position = dim2(0, 0, 0, 2),
+					BorderColor3 = rgb(0, 0, 0),
+					Size = dim2(1, -27, 1, 232),
+					BorderSizePixel = 0,
+					BackgroundColor3 = themes.preset.outline
+				}) library:apply_theme(list, "outline", "BackgroundColor3") 
+				
+				local inline = library:create("Frame", {
+					Parent = list,
+					Name = "",
+					Position = dim2(0, 1, 0, 1),
+					BorderColor3 = rgb(0, 0, 0),
+					Size = dim2(1, -2, 1, -2),
+					BorderSizePixel = 0,
+					BackgroundColor3 = themes.preset.inline
+				}) library:apply_theme(inline, "inline", "BackgroundColor3") 
+				
+				local background = library:create("Frame", {
+					Parent = inline,
+					Name = "",
+					Position = dim2(0, 1, 0, 1),
+					BorderColor3 = rgb(0, 0, 0),
+					Size = dim2(1, -2, 1, -2),
+					BorderSizePixel = 0,
+					BackgroundColor3 = themes.preset.accent
+				})
+				
+				local UIGradient = library:create("UIGradient", {
+					Parent = background,
+					Name = "",
+					Rotation = 90,
+					Color = rgbseq{
+						rgbkey(0, rgb(255, 255, 255)),
+						rgbkey(1, rgb(167, 167, 167))
+					}
+				}); library:apply_theme(UIGradient, "contrast", "Color") 
+				
+				local contrast = library:create("Frame", {
+					Parent = background,
+					Name = "",
+					BorderColor3 = rgb(0, 0, 0),
+					Size = dim2(1, 0, 1, 0),
+					BorderSizePixel = 0,
+					BackgroundColor3 = rgb(255, 255, 255)
+				})
+				
+				local UIGradient = library:create("UIGradient", {
+					Parent = contrast,
+					Name = "",
+					Rotation = 90,
+					Color = rgbseq{
+					rgbkey(0, rgb(41, 41, 55)),
+					rgbkey(1, rgb(35, 35, 47))
+				}
+				}); library:apply_theme(UIGradient, "contrast", "Color") 
+				
+				local ScrollingFrame = library:create("ScrollingFrame", {
+					Parent = contrast,
+					Name = "",
+					ScrollBarImageColor3 = themes.preset.accent,
+					Active = true,
+					MidImage = "rbxassetid://103468666327206",
+					TopImage = "rbxassetid://103468666327206",
+					BottomImage = "rbxassetid://103468666327206",
+					AutomaticCanvasSize = Enum.AutomaticSize.Y,
+					ScrollBarThickness = 2,
+					BackgroundTransparency = 1,
+					Size = dim2(1, 0, 1, 0),
+					BackgroundColor3 = rgb(255, 255, 255),
+					BorderColor3 = rgb(0, 0, 0),
+					BorderSizePixel = 0,
+					CanvasSize = dim2(0, 0, 0, 0)
+				}) library:apply_theme(ScrollingFrame, "accent", "ScrollBarImageColor3") 
+				
+				local UIPadding = library:create("UIPadding", {
+					Parent = ScrollingFrame,
+					Name = "",
+					PaddingTop = dim(0, 4),
+					PaddingBottom = dim(0, 4),
+					PaddingRight = dim(0, 4),
+					PaddingLeft = dim(0, 4)
+				})
+				
+				local UIListLayout = library:create("UIListLayout", {
+					Parent = ScrollingFrame,
+					Name = "",
+					Padding = dim(0, 4),
+					SortOrder = Enum.SortOrder.LayoutOrder
+				})
+			-- 
 
 			local team_colors = { inmates = rgb(255, 200, 100), guards = rgb(100, 150, 255), criminals = rgb(255, 100, 100), prisoners = rgb(255, 200, 100) }
 			local function get_team_color(playerObj)
-				if not playerObj then return themes.preset.text end
-				local teamName = playerObj.Team and playerObj.Team.Name
-				if teamName then
-					local key = teamName:lower():gsub("%s+", "")
-					if team_colors[key] then return team_colors[key] end
-				end
-				if playerObj.TeamColor then
-					local name = playerObj.TeamColor.Name
-					if name == "Bright blue" then return rgb(100, 150, 255)
-					elseif name == "Bright orange" or name == "Medium stone grey" then return rgb(255, 200, 100)
-					elseif name == "Bright red" then return rgb(255, 100, 100)
-					end
-				end
-				return themes.preset.text
+				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return themes.preset.text end
+				local key = playerObj.Team.Name:lower():gsub("%s+", "")
+				return team_colors[key] or themes.preset.text
 			end
 			-- Sort order: Guards first (0), then Inmates (1), then Criminals (2), then others (3)
 			local function get_team_sort_order(playerObj)
-				if not playerObj then return 3 end
-				local key = ""
-				if playerObj.Team and playerObj.Team.Name then
-					key = playerObj.Team.Name:lower():gsub("%s+", "")
-				elseif playerObj.TeamColor then
-					local name = playerObj.TeamColor.Name
-					if name == "Bright blue" then key = "guards"
-					elseif name == "Bright orange" or name == "Medium stone grey" then key = "inmates"
-					elseif name == "Bright red" then key = "criminals"
-					end
-				end
+				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return 3 end
+				local key = playerObj.Team.Name:lower():gsub("%s+", "")
 				if key == "guards" then return 0
 				elseif key == "inmates" or key == "prisoners" then return 1
 				elseif key == "criminals" then return 2
@@ -6243,7 +6351,7 @@ end)
 				local nameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
 				local layoutOrder = (nameStr == lp.Name) and -1000000 or (teamOrder * 100000 + nameSort)
 				local TextButton = library:create("TextButton", {
-					Parent = self.holder,
+					Parent = ScrollingFrame,
 					Name = "",
 					FontFace = library.font,
 					TextColor3 = themes.preset.text,
@@ -6322,7 +6430,7 @@ end)
 					Size = dim2(0, 1, 0, 12),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline
-				}) library:apply_theme(Frame, "outline", "BackgroundColor3") 
+				}) library:apply_theme(main_holder, "outline", "BackgroundColor3") 
 				
 				local UIListLayout = library:create("UIListLayout", {
 					Parent = TextButton,
@@ -6341,14 +6449,14 @@ end)
 				})
 
 				local line = library:create("Frame", {
-					Parent = self.holder,
+					Parent = ScrollingFrame,
 					Name = "",
 					BorderColor3 = rgb(0, 0, 0),
 					Size = dim2(1, 0, 0, 1),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline,
 					LayoutOrder = layoutOrder + 0.5
-				}) library:apply_theme(line, "outline", "BackgroundColor3") 
+				}) library:apply_theme(main_holder, "outline", "BackgroundColor3") 
 
 				path.instance = TextButton 
 				path.line = line 
@@ -6357,7 +6465,7 @@ end)
 				path.player_name = player_name
 				path.team_color = teamColor
 				if playerObj then
-					local function updateTeam()
+					playerObj:GetPropertyChangedSignal("Team"):Connect(function()
 						if nameStr == lp.Name then return end
 						local newColor = get_team_color(playerObj)
 						path.team_color = newColor
@@ -6369,23 +6477,7 @@ end)
 						local newLayoutOrder = newOrder * 100000 + newNameSort
 						TextButton.LayoutOrder = newLayoutOrder
 						line.LayoutOrder = newLayoutOrder + 0.5
-
-						if library.selected_player == nameStr then
-							if cfg.labels.team then
-								local teamDisplay = "Team: --"
-								if playerObj.Team and playerObj.Team.Name then
-									local key = playerObj.Team.Name:lower():gsub("%s+", "")
-									teamDisplay = (key == "guards" and "Team: Guard") or (key == "inmates" or key == "prisoners") and "Team: Inmate" or (key == "criminals" and "Team: Criminal") or ("Team: " .. playerObj.Team.Name)
-								elseif playerObj.TeamColor then
-									local name = playerObj.TeamColor.Name
-									teamDisplay = (name == "Bright blue" and "Team: Guard") or (name == "Bright orange" and "Team: Inmate") or (name == "Bright red" and "Team: Criminal") or "Team: --"
-								end
-								cfg.labels.team.set(teamDisplay, newColor)
-							end
-						end
-					end
-					playerObj:GetPropertyChangedSignal("Team"):Connect(updateTeam)
-					playerObj:GetPropertyChangedSignal("TeamColor"):Connect(updateTeam)
+					end)
 				end
 				-- library.selected_player = players[tostring(player)]
 				
@@ -6421,14 +6513,9 @@ end)
 						local p = players[player_name.Text]
 						local teamDisplay = "Team: --"
 						local teamColor = themes.preset.text
-						if p then
-							if p.Team and p.Team.Name then
-								local key = p.Team.Name:lower():gsub("%s+", "")
-								teamDisplay = (key == "guards" and "Team: Guard") or (key == "inmates" or key == "prisoners") and "Team: Inmate" or (key == "criminals" and "Team: Criminal") or ("Team: " .. p.Team.Name)
-							elseif p.TeamColor then
-								local name = p.TeamColor.Name
-								teamDisplay = (name == "Bright blue" and "Team: Guard") or (name == "Bright orange" and "Team: Inmate") or (name == "Bright red" and "Team: Criminal") or "Team: --"
-							end
+						if p and p.Team and p.Team.Name then
+							local key = p.Team.Name:lower():gsub("%s+", "")
+							teamDisplay = (key == "guards" and "Team: Guard") or (key == "inmates" or key == "prisoners") and "Team: Inmate" or (key == "criminals" and "Team: Criminal") or ("Team: " .. p.Team.Name)
 							teamColor = path.team_color
 						end
 						cfg.labels.team.set(teamDisplay, teamColor)
@@ -6505,7 +6592,7 @@ end)
 			end})
 		
 			local icon_row = library:create("Frame", {
-				Parent = options.details_parent or self.holder,
+				Parent = self.holder,
 				Name = "",
 				Size = dim2(1, 0, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
@@ -6576,7 +6663,7 @@ end)
 			local info_holder = library:create("Frame", {
 				Parent = icon_row,
 				Name = "",
-				Size = dim2(1, -76, 0, 0),
+				Size = dim2(0, 215, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1,
