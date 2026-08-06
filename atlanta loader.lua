@@ -6104,11 +6104,13 @@ end)
 
 			function cfg.set_name(newName)
 				cfg.name = newName
-				text.Text = newName
-				if newName:sub(-1) == "?" then
-					text.TextColor3 = rgb(255, 0, 0)
-				else
-					text.TextColor3 = themes.preset.text
+				if text and text.Parent then
+					text.Text = newName
+					if newName:sub(-1) == "?" then
+						text.TextColor3 = rgb(255, 0, 0)
+					else
+						text.TextColor3 = themes.preset.text
+					end
 				end
 			end
 
