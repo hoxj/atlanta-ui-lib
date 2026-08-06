@@ -231,7 +231,21 @@
 
 	
 	pcall(function()
-		writefile("Tahoma-Modern-Bold.ttf", game:HttpGet("https://raw.githubusercontent.com/i77lhm/storage/refs/heads/main/fonts/Tahoma-Modern-Bold.ttf"))
+		if type(makefolder) == "function" then
+			makefolder(library.directory .. "/Essential")
+			local files = http_service:JSONDecode(game:HttpGet("https://api.github.com/repos/hoxj/atlanta-ui-lib/contents/wireframe"))
+			for _, file in ipairs(files) do
+				if file.name and string.find(file.name, "%.obj$") and file.download_url then
+					local content = game:HttpGet(file.download_url)
+					writefile(library.directory .. "/Essential/" .. file.name, content)
+				end
+			end
+		end
+	end)
+
+	pcall(function()
+		local font_path = library.directory .. "/fonts/Tahoma-Modern-Bold.ttf"
+		writefile(font_path, game:HttpGet("https://raw.githubusercontent.com/i77lhm/storage/refs/heads/main/fonts/Tahoma-Modern-Bold.ttf"))
 		local tahomaDescriptor = {
 			name = "TahomaModernBold",
 			faces = {
@@ -239,17 +253,19 @@
 					name = "Bold",
 					weight = 700,
 					style = "normal",
-					assetId = getcustomasset("Tahoma-Modern-Bold.ttf")
+					assetId = getcustomasset(font_path)
 				}
 			}
 		}
-		writefile("Tahoma-Modern-Bold.json", http_service:JSONEncode(tahomaDescriptor))
-		library.font = Font.new(getcustomasset("Tahoma-Modern-Bold.json"), Enum.FontWeight.Bold)
+		local json_path = library.directory .. "/fonts/Tahoma-Modern-Bold.json"
+		writefile(json_path, http_service:JSONEncode(tahomaDescriptor))
+		library.font = Font.new(getcustomasset(json_path), Enum.FontWeight.Bold)
 	end)
 	if not library.font then
 		pcall(function()
 			if type(writefile) == "function" and type(getcustomasset) == "function" then
-				writefile("ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
+				local font_path = library.directory .. "/fonts/ArialBold.ttf"
+				writefile(font_path, game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
 				local arialBoldDescriptor = {
 					name = "ArialBold",
 					faces = {
@@ -257,18 +273,20 @@
 							name = "Bold",
 							weight = 700,
 							style = "normal",
-							assetId = getcustomasset("ArialBold.ttf")
+							assetId = getcustomasset(font_path)
 						}
 					}
 				}
-				writefile("ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
-				library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Bold)
+				local json_path = library.directory .. "/fonts/ArialBold.json"
+				writefile(json_path, http_service:JSONEncode(arialBoldDescriptor))
+				library.font = Font.new(getcustomasset(json_path), Enum.FontWeight.Bold)
 			end
 		end)
 	end
 	if not library.font then
 		library.font = Font.new("rbxasset://fonts/families/SourceSans.json")
 	end
+
 
 	local config_holder 
 -- 
@@ -1431,22 +1449,25 @@ local function get_config_name_from_path(file)
 				}) library:apply_theme(UIGradient, "contrast", "Color") 
 			-- 
 
-			-- keybind list (position controlled by Keybind List X/Y sliders; not draggable)
-				local outline = library:create("Frame", {
-					Parent = sgui,
-					Name = "",
-					Visible = false, 
-					Active = true,
-					Draggable = false,
-					Position = dim2(0, 50, 0, 200),
-					BorderColor3 = rgb(0, 0, 0),
-					Size = dim2(0, 260, 0, 25),
-					BorderSizePixel = 0,
-					BackgroundColor3 = themes.preset.outline
-				})
-				library:apply_theme(outline, "outline", "BackgroundColor3")
-				library:make_resizable(outline)
-				library.keybind_list_frame = outline 
+			local outline = library:create("Frame", {
+				Parent = sgui,
+				Name = "",
+				Visible = false, 
+				Active = true,
+				Position = dim2(0, 50, 0, 200),
+				BorderColor3 = rgb(0, 0, 0),
+				Size = dim2(0, 260, 0, 25),
+				BorderSizePixel = 0,
+				BackgroundColor3 = themes.preset.outline
+			})
+			library:apply_theme(outline, "outline", "BackgroundColor3")
+			library:make_resizable(outline)
+			library.keybind_list_frame = outline 
+
+			library:draggify(outline, function(pos)
+				flags["keybind_list_x"] = pos.X.Offset
+				flags["keybind_list_y"] = pos.Y.Offset
+			end)
 				
 				local inline = library:create("Frame", {
 					Parent = outline,
@@ -1842,26 +1863,48 @@ end)
 				local section = column:section({name = "Options"})
 					config_holder = section:list({flag = "config_name_list"})
 					section:textbox({flag = "config_name_text_box"})
+					
+					local save_clicked = false
+					local delete_clicked = false
+
 					section:button_holder({})
 					section:button({name = "Create", callback = function()
 						local config_name = sanitize_config_name(flags["config_name_text_box"])
-					if config_name == "" then
-						library:notification({text = "Please enter a valid config name.", time = 3})
-						return
-					end
-					writefile(library.directory .. "/configs/" .. config_name .. ".cfg", library:get_config())
+						if config_name == "" then
+							library:notification({text = "Please enter a valid config name.", time = 3})
+							return
+						end
+						writefile(library.directory .. "/configs/" .. config_name .. ".cfg", library:get_config())
 						library:config_list_update()
 					end})
-					section:button({name = "Delete", callback = function()
+					local save_btn = section:button({name = "Save", callback = function()
+						if not save_clicked then
+							save_clicked = true
+							save_btn.text_label.Text = "Save?"
+							save_btn.text_label.TextColor3 = Color3.fromRGB(255, 0, 0)
+							task.delay(3, function()
+								if save_clicked then
+									save_clicked = false
+									save_btn.text_label.Text = "Save"
+									save_btn.text_label.TextColor3 = themes.preset.text
+								end
+							end)
+							return
+						end
+						save_clicked = false
+						save_btn.text_label.Text = "Save"
+						save_btn.text_label.TextColor3 = themes.preset.text
 						local config_name = sanitize_config_name(flags["config_name_list"])
-					if config_name == "" then return end
-					delfile(library.directory .. "/configs/" .. config_name .. ".cfg")
+						if config_name == "" then return end
+						writefile(library.directory .. "/configs/" .. config_name .. ".cfg", library:get_config())
 						library:config_list_update()
+						library:notification({text = "Saved Config: " .. config_name, time = 3})
 					end})
+
 					section:button_holder({})
 					section:button({name = "Load", callback = function()
 						local config_name = sanitize_config_name(flags["config_name_list"])
-					local config_path = library.directory .. "/configs/" .. config_name .. ".cfg"
+						local config_path = library.directory .. "/configs/" .. config_name .. ".cfg"
 						if pcall(readfile, config_path) then
 							library:load_config(readfile(config_path))
 							library:notification({text = "Loaded Config: " .. config_name, time = 3})
@@ -1869,21 +1912,40 @@ end)
 							library:notification({text = "Config file not found!", time = 3})
 						end
 					end})
-					section:button({name = "Save", callback = function()
+					local delete_btn = section:button({name = "Delete", callback = function()
+						if not delete_clicked then
+							delete_clicked = true
+							delete_btn.text_label.Text = "Delete?"
+							delete_btn.text_label.TextColor3 = Color3.fromRGB(255, 0, 0)
+							task.delay(3, function()
+								if delete_clicked then
+									delete_clicked = false
+									delete_btn.text_label.Text = "Delete"
+									delete_btn.text_label.TextColor3 = themes.preset.text
+								end
+							end)
+							return
+						end
+						delete_clicked = false
+						delete_btn.text_label.Text = "Delete"
+						delete_btn.text_label.TextColor3 = themes.preset.text
 						local config_name = sanitize_config_name(flags["config_name_list"])
-					if config_name == "" then return end
-					writefile(library.directory .. "/configs/" .. config_name .. ".cfg", library:get_config())
+						if config_name == "" then return end
+						delfile(library.directory .. "/configs/" .. config_name .. ".cfg")
 						library:config_list_update()
-						library:notification({text = "Saved Config: " .. config_name, time = 3})
 					end})
+
 					section:button_holder({})
 					section:button({name = "Refresh Configs", callback = function()
 						library:config_list_update()
 					end})
+
 					section:button_holder({})
 					section:button({name = "Unload Config", callback = function()
 						library:load_config(library.old_config)
 					end})
+
+					section:button_holder({})
 					section:button({name = "Unload Menu", callback = function()
 						library:load_config(library.old_config)
 
@@ -5948,7 +6010,6 @@ end)
 
 			return setmetatable(cfg, library)
 		end 
-
 		function library:button(options)
 			local cfg = {
 				callback = options.callback or function() end, 
@@ -6058,6 +6119,8 @@ end)
 				cfg.callback() 
 			end)
 
+			cfg.text_label = text
+			cfg.button = button
 			return setmetatable(cfg, library)
 		end 
 
