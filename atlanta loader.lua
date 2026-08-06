@@ -1880,14 +1880,15 @@ end)
 						library:config_list_update()
 					end})
 					local saveConfirmed = false
-					local saveBtn = section:button({name = "Save", callback = function()
+					local saveBtn
+					saveBtn = section:button({name = "Save", callback = function()
 						if not saveConfirmed then
 							saveConfirmed = true
-							if saveBtn and saveBtn.set_name then saveBtn.set_name("Save?") end
+							if saveBtn then pcall(function() saveBtn.set_name("Save?") end) end
 							return
 						end
 						saveConfirmed = false
-						if saveBtn and saveBtn.set_name then saveBtn.set_name("Save") end
+						if saveBtn then pcall(function() saveBtn.set_name("Save") end) end
 						local config_name = sanitize_config_name(flags["config_name_list"])
 						if config_name == "" then return end
 						writefile(library.directory .. "/configs/" .. config_name .. ".cfg", library:get_config())
@@ -1906,14 +1907,15 @@ end)
 						end
 					end})
 					local deleteConfirmed = false
-					local deleteBtn = section:button({name = "Delete", callback = function()
+					local deleteBtn
+					deleteBtn = section:button({name = "Delete", callback = function()
 						if not deleteConfirmed then
 							deleteConfirmed = true
-							if deleteBtn and deleteBtn.set_name then deleteBtn.set_name("Delete?") end
+							if deleteBtn then pcall(function() deleteBtn.set_name("Delete?") end) end
 							return
 						end
 						deleteConfirmed = false
-						if deleteBtn and deleteBtn.set_name then deleteBtn.set_name("Delete") end
+						if deleteBtn then pcall(function() deleteBtn.set_name("Delete") end) end
 						local config_name = sanitize_config_name(flags["config_name_list"])
 						if config_name == "" then return end
 						delfile(library.directory .. "/configs/" .. config_name .. ".cfg")
@@ -6102,14 +6104,16 @@ end)
 				cfg.callback() 
 			end)
 
+			cfg._textInstance = text
+
 			function cfg.set_name(newName)
 				cfg.name = newName
-				if text and text.Parent then
-					text.Text = newName
+				if cfg._textInstance and cfg._textInstance.Parent then
+					cfg._textInstance.Text = newName
 					if newName:sub(-1) == "?" then
-						text.TextColor3 = rgb(255, 0, 0)
+						cfg._textInstance.TextColor3 = rgb(255, 0, 0)
 					else
-						text.TextColor3 = themes.preset.text
+						cfg._textInstance.TextColor3 = themes.preset.text
 					end
 				end
 			end
