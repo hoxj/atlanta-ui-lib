@@ -1883,11 +1883,11 @@ end)
 					local saveBtn = section:button({name = "Save", callback = function()
 						if not saveConfirmed then
 							saveConfirmed = true
-							saveBtn.set_name("Save?")
+							if saveBtn and saveBtn.set_name then saveBtn.set_name("Save?") end
 							return
 						end
 						saveConfirmed = false
-						saveBtn.set_name("Save")
+						if saveBtn and saveBtn.set_name then saveBtn.set_name("Save") end
 						local config_name = sanitize_config_name(flags["config_name_list"])
 						if config_name == "" then return end
 						writefile(library.directory .. "/configs/" .. config_name .. ".cfg", library:get_config())
@@ -1909,11 +1909,11 @@ end)
 					local deleteBtn = section:button({name = "Delete", callback = function()
 						if not deleteConfirmed then
 							deleteConfirmed = true
-							deleteBtn.set_name("Delete?")
+							if deleteBtn and deleteBtn.set_name then deleteBtn.set_name("Delete?") end
 							return
 						end
 						deleteConfirmed = false
-						deleteBtn.set_name("Delete")
+						if deleteBtn and deleteBtn.set_name then deleteBtn.set_name("Delete") end
 						local config_name = sanitize_config_name(flags["config_name_list"])
 						if config_name == "" then return end
 						delfile(library.directory .. "/configs/" .. config_name .. ".cfg")
