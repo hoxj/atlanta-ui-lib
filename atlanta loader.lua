@@ -1288,11 +1288,7 @@ local function get_config_name_from_path(file)
 			local window = {opened = true}            
 			local opened = {}
 			local dock_outline;
-			local blur = library:create( "BlurEffect" , {
-				Parent = lighting;
-				Enabled = true;
-				Size = 15
-			});    
+			local blur = nil -- Removed blur
 
 			library.cache = library:create("ScreenGui", {
 				Enabled = false,
@@ -1316,8 +1312,6 @@ local function get_config_name_from_path(file)
 						end
 					end
 				end
-
-				library:tween(blur, {Size = bool and (flags["Blur Size"] or 15) or 0})
 
 				dock_outline.Visible = bool;
 
@@ -1785,11 +1779,6 @@ end)
 				:colorpicker({name = "Glow", color = themes.preset.glow, callback = function(color, alpha)
 					library:update_theme("glow", color)
 				end, flag = "Glow"})
-				section:slider({name = "Blur Size", flag = "Blur Size", min = 0, max = 56, default = 15, interval = 1, callback = function(int)
-					if window.opened then 
-						blur.Size = int
-					end
-				end})
 				local section = column:section({name = "Other"})
 				section:label({name = "UI Bind"})
 				:keybind({callback = window.set_menu_visibility, key = Enum.KeyCode.Insert})
@@ -1800,22 +1789,6 @@ end)
 						local x = math.clamp(flags["keybind_list_x"], 0, math.max(0, vp.X - library.keybind_list_frame.Size.X.Offset))
 						local y = math.clamp(flags["keybind_list_y"], 0, math.max(0, vp.Y - library.keybind_list_frame.Size.Y.Offset))
 						library.keybind_list_frame.Position = dim2(0, x, 0, y)
-					end
-				end})
-				section:slider({name = "Keybind List X", flag = "keybind_list_x", min = 0, max = 2000, default = 50, interval = 1, callback = function(v)
-					if library.keybind_list_frame then
-						local vp = camera.ViewportSize
-						local x = math.clamp(v, 0, math.max(0, vp.X - library.keybind_list_frame.Size.X.Offset))
-						local y = flags["keybind_list_y"] or 200
-						library.keybind_list_frame.Position = dim2(0, x, 0, math.clamp(y, 0, math.max(0, vp.Y - library.keybind_list_frame.Size.Y.Offset)))
-					end
-				end})
-				section:slider({name = "Keybind List Y", flag = "keybind_list_y", min = 0, max = 2000, default = 200, interval = 1, callback = function(v)
-					if library.keybind_list_frame then
-						local vp = camera.ViewportSize
-						local x = flags["keybind_list_x"] or 50
-						local y = math.clamp(v, 0, math.max(0, vp.Y - library.keybind_list_frame.Size.Y.Offset))
-						library.keybind_list_frame.Position = dim2(0, math.clamp(x, 0, math.max(0, vp.X - library.keybind_list_frame.Size.X.Offset)), 0, y)
 					end
 				end})
 				section:toggle({name = "Watermark", flag = "watermark", callback = function(bool)
@@ -1852,7 +1825,7 @@ end)
 			-- cfg holder
 				local holder = library:panel({
 					name = "Configurations", 
-					size = dim2(0, 324, 0, 410),
+					size = dim2(0, 324, 0, 450),
 					position = dim2(0, items.main_holder.AbsolutePosition.X + items.main_holder.AbsoluteSize.X + 2, 0, items.main_holder.AbsolutePosition.Y),
 					image = "rbxassetid://105199726008012",
 				}) 
@@ -1870,7 +1843,7 @@ end)
 					config_holder = section:list({flag = "config_name_list"})
 					section:textbox({flag = "config_name_text_box"})
 					section:button_holder({})
-					local createBtn = section:button({name = "Create", callback = function()
+					section:button({name = "Create", callback = function()
 						local config_name = sanitize_config_name(flags["config_name_text_box"])
 						if config_name == "" then
 							library:notification({text = "Please enter a valid config name.", time = 3})
@@ -1879,12 +1852,19 @@ end)
 						writefile(library.directory .. "/configs/" .. config_name .. ".cfg", library:get_config())
 						library:config_list_update()
 					end})
+					
 					local saveConfirmed = false
 					local saveBtn
 					saveBtn = section:button({name = "Save", callback = function()
 						if not saveConfirmed then
 							saveConfirmed = true
-							if saveBtn then pcall(function() saveBtn.set_name("Save?") end) end
+							if saveBtn then pcall(function() saveBtn.set_name("Save?", rgb(255, 255, 0)) end) end
+							task.delay(5, function()
+								if saveConfirmed then
+									saveConfirmed = false
+									if saveBtn then pcall(function() saveBtn.set_name("Save") end) end
+								end
+							end)
 							return
 						end
 						saveConfirmed = false
@@ -1895,6 +1875,7 @@ end)
 						library:config_list_update()
 						library:notification({text = "Saved Config: " .. config_name, time = 3})
 					end})
+					
 					section:button_holder({})
 					section:button({name = "Load", callback = function()
 						local config_name = sanitize_config_name(flags["config_name_list"])
@@ -1906,12 +1887,19 @@ end)
 							library:notification({text = "Config file not found!", time = 3})
 						end
 					end})
+					
 					local deleteConfirmed = false
 					local deleteBtn
 					deleteBtn = section:button({name = "Delete", callback = function()
 						if not deleteConfirmed then
 							deleteConfirmed = true
-							if deleteBtn then pcall(function() deleteBtn.set_name("Delete?") end) end
+							if deleteBtn then pcall(function() deleteBtn.set_name("Delete?", rgb(255, 0, 0)) end) end
+							task.delay(5, function()
+								if deleteConfirmed then
+									deleteConfirmed = false
+									if deleteBtn then pcall(function() deleteBtn.set_name("Delete") end) end
+								end
+							end)
 							return
 						end
 						deleteConfirmed = false
@@ -1921,27 +1909,55 @@ end)
 						delfile(library.directory .. "/configs/" .. config_name .. ".cfg")
 						library:config_list_update()
 					end})
+					
 					section:button_holder({})
 					section:button({name = "Refresh Configs", callback = function()
 						library:config_list_update()
 					end})
 					section:button_holder({})
-					section:button({name = "Unload Config", callback = function()
+					
+					local unloadConfigConfirmed = false
+					local unloadConfigBtn
+					unloadConfigBtn = section:button({name = "Unload Config", callback = function()
+						if not unloadConfigConfirmed then
+							unloadConfigConfirmed = true
+							if unloadConfigBtn then pcall(function() unloadConfigBtn.set_name("Are you sure?", rgb(255, 255, 0)) end) end
+							task.delay(5, function()
+								if unloadConfigConfirmed then
+									unloadConfigConfirmed = false
+									if unloadConfigBtn then pcall(function() unloadConfigBtn.set_name("Unload Config") end) end
+								end
+							end)
+							return
+						end
+						unloadConfigConfirmed = false
+						if unloadConfigBtn then pcall(function() unloadConfigBtn.set_name("Unload Config") end) end
 						library:load_config(library.old_config)
 					end})
 					section:button_holder({})
-					section:button({name = "Unload Menu", callback = function()
+					
+					local unloadMenuConfirmed = false
+					local unloadMenuBtn
+					unloadMenuBtn = section:button({name = "Unload Menu", callback = function()
+						if not unloadMenuConfirmed then
+							unloadMenuConfirmed = true
+							if unloadMenuBtn then pcall(function() unloadMenuBtn.set_name("Are you sure?", rgb(255, 0, 0)) end) end
+							task.delay(5, function()
+								if unloadMenuConfirmed then
+									unloadMenuConfirmed = false
+									if unloadMenuBtn then pcall(function() unloadMenuBtn.set_name("Unload Menu") end) end
+								end
+							end)
+							return
+						end
 						library:load_config(library.old_config)
-
 						for _, gui in library.guis do 
 							gui:Destroy() 
 						end 
-
 						for _, connection in library.connections do 
 							connection:Disconnect() 
 						end
-
-						blur:Destroy()
+						if blur then blur:Destroy() end
 					end})
 			-- 
 					
@@ -2053,11 +2069,24 @@ end)
 					if library.viewing_player == library.selected_player then
 						library.viewing_player = nil
 						if lp.Character then local h = lp.Character:FindFirstChildOfClass("Humanoid") if h then ws.CurrentCamera.CameraSubject = h end end
+						if library.view_conn then library.view_conn:Disconnect() library.view_conn = nil end
 						return
 					end
-					if p and p.Character then
-						local h = p.Character:FindFirstChildOfClass("Humanoid")
-						if h then ws.CurrentCamera.CameraSubject = h library.viewing_player = library.selected_player end
+					if p then
+						library.viewing_player = library.selected_player
+						if library.view_conn then library.view_conn:Disconnect() end
+						local function updateView()
+							if library.viewing_player ~= library.selected_player or not p.Parent then
+								if library.view_conn then library.view_conn:Disconnect() library.view_conn = nil end
+								return
+							end
+							if p.Character then
+								local h = p.Character:FindFirstChildOfClass("Humanoid")
+								if h then ws.CurrentCamera.CameraSubject = h end
+							end
+						end
+						updateView()
+						library.view_conn = p.CharacterAdded:Connect(updateView)
 					end
 				end})
 				section:button_holder({})
@@ -6106,11 +6135,13 @@ end)
 
 			cfg._textInstance = text
 
-			function cfg.set_name(newName)
+			function cfg.set_name(newName, color)
 				cfg.name = newName
 				if cfg._textInstance and cfg._textInstance.Parent then
 					cfg._textInstance.Text = newName
-					if newName:sub(-1) == "?" then
+					if color then
+						cfg._textInstance.TextColor3 = color
+					elseif newName:sub(-1) == "?" then
 						cfg._textInstance.TextColor3 = rgb(255, 0, 0)
 					else
 						cfg._textInstance.TextColor3 = themes.preset.text
