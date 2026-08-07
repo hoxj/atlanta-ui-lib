@@ -230,9 +230,8 @@
 	end 
 
 	
-	local _fontDir = library.directory .. "/fonts/"
 	pcall(function()
-		writefile(_fontDir .. "Tahoma-Modern-Bold.ttf", game:HttpGet("https://raw.githubusercontent.com/i77lhm/storage/refs/heads/main/fonts/Tahoma-Modern-Bold.ttf"))
+		writefile("Tahoma-Modern-Bold.ttf", game:HttpGet("https://raw.githubusercontent.com/i77lhm/storage/refs/heads/main/fonts/Tahoma-Modern-Bold.ttf"))
 		local tahomaDescriptor = {
 			name = "TahomaModernBold",
 			faces = {
@@ -240,17 +239,17 @@
 					name = "Bold",
 					weight = 700,
 					style = "normal",
-					assetId = getcustomasset(_fontDir .. "Tahoma-Modern-Bold.ttf")
+					assetId = getcustomasset("Tahoma-Modern-Bold.ttf")
 				}
 			}
 		}
-		writefile(_fontDir .. "Tahoma-Modern-Bold.json", http_service:JSONEncode(tahomaDescriptor))
-		library.font = Font.new(getcustomasset(_fontDir .. "Tahoma-Modern-Bold.json"), Enum.FontWeight.Bold)
+		writefile("Tahoma-Modern-Bold.json", http_service:JSONEncode(tahomaDescriptor))
+		library.font = Font.new(getcustomasset("Tahoma-Modern-Bold.json"), Enum.FontWeight.Bold)
 	end)
 	if not library.font then
 		pcall(function()
 			if type(writefile) == "function" and type(getcustomasset) == "function" then
-				writefile(_fontDir .. "ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
+				writefile("ArialBold.ttf", game:HttpGet("https://raw.githubusercontent.com/hoxj/atlanta-ui-lib/main/ArialBold.ttf"))
 				local arialBoldDescriptor = {
 					name = "ArialBold",
 					faces = {
@@ -258,12 +257,12 @@
 							name = "Bold",
 							weight = 700,
 							style = "normal",
-							assetId = getcustomasset(_fontDir .. "ArialBold.ttf")
+							assetId = getcustomasset("ArialBold.ttf")
 						}
 					}
 				}
-				writefile(_fontDir .. "ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
-				library.font = Font.new(getcustomasset(_fontDir .. "ArialBold.json"), Enum.FontWeight.Bold)
+				writefile("ArialBold.json", http_service:JSONEncode(arialBoldDescriptor))
+				library.font = Font.new(getcustomasset("ArialBold.json"), Enum.FontWeight.Bold)
 			end
 		end)
 	end
@@ -2231,16 +2230,11 @@ end)
 			local get_settings = props.get_settings or library.esp_preview_get_settings
 
 			local character = nil
-			pcall(function()
-				local userId = 1534449131 -- 9_32cx
-				local appearance = players:GetCharacterAppearanceAsync(userId)
-				character = appearance
+			if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+				lp.Character.Archivable = true
+				character = lp.Character:Clone()
 				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
-				if not character:FindFirstChildOfClass("Humanoid") then
-					Instance.new("Humanoid", character)
-				end
-				character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
-			end)
+			end
 
 			local items = cfg.items; do 
 				items.viewportframe = library:create( "ViewportFrame" , {
@@ -3008,7 +3002,7 @@ end)
 					Position = UDim2.new(0, base_x, 0, base_y + offset),
 					AutomaticSize = Enum.AutomaticSize.X,
 					BackgroundColor3 = themes.preset.outline,
-					AnchorPoint = Vector2.new(0, 0)
+					AnchorPoint = Vector2.new(1, 0) -- Start off-screen
 				})
 			
 				local watermark_inline = library:create("Frame", {
