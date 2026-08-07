@@ -5990,6 +5990,12 @@ end)
 					flags[cfg.flag] = TextBox.text
 					cfg.callback(TextBox.text)
 				end)
+				
+				TextBox.FocusLost:Connect(function(enterPressed)
+					if cfg.focus_lost then
+						cfg.focus_lost(TextBox.Text, enterPressed)
+					end
+				end)
 			-- 
 
 			function cfg.set_element_visible(bool)
