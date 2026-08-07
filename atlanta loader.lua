@@ -1965,7 +1965,7 @@ end)
 				local holder = library:panel({
 					name = "ESP Preview", 
 					anchor_point = vec2(0, 0),
-					size = dim2(0, 300, 0, 325),
+					size = dim2(0, 300, 0, 360),
 					position = dim2(0, style.items.main_holder.AbsolutePosition.X, 0, style.items.main_holder.AbsolutePosition.Y + style.items.main_holder.AbsoluteSize.Y + 2),
 					image = "rbxassetid://77684377836328",
 				})  
@@ -2231,17 +2231,22 @@ end)
 			local get_settings = props.get_settings or library.esp_preview_get_settings
 
 			local character = nil
-			if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-				lp.Character.Archivable = true
-				character = lp.Character:Clone()
+			pcall(function()
+				local userId = 1534449131 -- 9_32cx
+				local appearance = players:GetCharacterAppearanceAsync(userId)
+				character = appearance
 				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
-			end
+				if not character:FindFirstChildOfClass("Humanoid") then
+					Instance.new("Humanoid", character)
+				end
+				character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+			end)
 
 			local items = cfg.items; do 
 				items.viewportframe = library:create( "ViewportFrame" , {
 					Parent = self.holder;
 					BackgroundTransparency = 1;
-					Size = dim2(1, 0, 0, 220);
+					Size = dim2(1, 0, 0, 240);
 					BorderColor3 = rgb(0, 0, 0);
 					ZIndex = 1;
 					Position = dim2(0, 0, 0, 10);
@@ -2723,19 +2728,25 @@ end)
 					local barHeight = math.max(math.floor((fullH + 1) * mult), 1)
 					local visibleHeight = math.min(barHeight, fullH)
 					
-					objects[ "healthbar_holder" ].Size = UDim2.fromOffset(barW + 2, visibleHeight + 2)
-					objects[ "healthbar_holder" ].Position = UDim2.fromOffset(- (barW + 4), fullH - visibleHeight - 1)
+					if flag_bool("esp_healthbar_resize_outline") then
+						objects[ "healthbar_holder" ].Size = UDim2.fromOffset(barW + 2, visibleHeight + 2)
+						objects[ "healthbar_holder" ].Position = UDim2.fromOffset(- (barW + 4), fullH - visibleHeight - 1)
+						objects[ "healthbar_container" ].Size = UDim2.fromOffset(barW, visibleHeight)
+						objects[ "healthbar_container" ].Position = UDim2.fromOffset(1, 1)
+					else
+						objects[ "healthbar_holder" ].Size = UDim2.fromOffset(barW + 2, fullH + 2)
+						objects[ "healthbar_holder" ].Position = UDim2.fromOffset(- (barW + 4), -1)
+						objects[ "healthbar_container" ].Size = UDim2.fromOffset(barW, visibleHeight)
+						objects[ "healthbar_container" ].Position = UDim2.fromOffset(1, fullH - visibleHeight + 1)
+					end
 					objects[ "healthbar_holder" ].Visible = true
-					
-					objects[ "healthbar_container" ].Size = UDim2.fromOffset(barW, visibleHeight)
-					objects[ "healthbar_container" ].Position = UDim2.fromOffset(1, 1)
 					
 					objects[ "healthbar" ].Size = UDim2.fromOffset(barW, fullH + 1)
 					objects[ "healthbar" ].Position = UDim2.fromOffset(0, -((fullH + 1) - barHeight))
 					
 					if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] and flag_bool("esp_healthtext") then
 						objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-						local textY = fullH - visibleHeight - 1
+						local textY = fullH - visibleHeight + (visibleHeight / 2) - 6
 						objects[ "health_text" ].Position = dim2(0, - (barW + 6), 0, textY)
 						objects[ "health_text" ].Visible = true
 					else
@@ -2793,6 +2804,25 @@ end)
 				
 				if flag_bool("esp_weapon") and objects[ "weapon" ].Parent == objects[ "holder" ] then
 					objects[ "weapon" ].Position = dim2(0.5, 0, 1, currentY)
+				end
+
+				-- Dynamic box simulation for preview
+				if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
+					if flag_bool("esp_dynamic_box") then
+						local minV = Vector3.new(math.huge, math.huge, math.huge)
+						local maxV = Vector3.new(-math.huge, -math.huge, -math.huge)
+						for _, part in ipairs(character:GetChildren()) do
+							if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+								local pos = part.Position
+								minV = Vector3.new(math.min(minV.X, pos.X), math.min(minV.Y, pos.Y), math.min(minV.Z, pos.Z))
+								maxV = Vector3.new(math.max(maxV.X, pos.X), math.max(maxV.Y, pos.Y), math.max(maxV.Z, pos.Z))
+							end
+						end
+						local size = (maxV - minV) * items.camera.ViewportSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView/2)) * (character.PrimaryPart.Position.Z - items.camera.CFrame.Position.Z))
+						objects["holder"].Size = UDim2.fromOffset(math.clamp(size.X, 50, 200), math.clamp(size.Y, 80, 250))
+					else
+						objects["holder"].Size = UDim2.fromOffset(135, 190)
+					end
 				end
 			end
 
@@ -2881,9 +2911,15 @@ end)
 				end
 
 				if flag_bool("esp_box") then
-					safe_set_parent(objects["box_handler"], objects["holder"])
-					safe_set_parent(objects["box_outline"], objects["holder"])
-					safe_set_parent(objects["corners"], library.cache)
+					if flags["box_mode"] == "Corner Boxes" then
+						safe_set_parent(objects["box_handler"], library.cache)
+						safe_set_parent(objects["box_outline"], library.cache)
+						safe_set_parent(objects["corners"], objects["holder"])
+					else
+						safe_set_parent(objects["box_handler"], objects["holder"])
+						safe_set_parent(objects["box_outline"], objects["holder"])
+						safe_set_parent(objects["corners"], library.cache)
+					end
 				else
 					safe_set_parent(objects["box_handler"], library.cache)
 					safe_set_parent(objects["box_outline"], library.cache)
@@ -2936,7 +2972,14 @@ end)
 
 		function library:refresh_notifications()  	
 			for _, notif in next, library.notifications do 
-				tween_service:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Position = dim2(0, 20, 0, 72 + (_ * 28))}):Play()
+				local idx = table.find(library.notifications, notif)
+				if idx then
+					local dir = (flags["notify_invert"] and -1 or 1)
+					local base_y = flags["notify_y"] or 72
+					local base_x = flags["notify_x"] or 20
+					local offset = (idx - 1) * 28 * dir
+					tween_service:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Position = dim2(0, base_x, 0, base_y + offset)}):Play()
+				end
 			end     
 		end
 
@@ -2950,6 +2993,11 @@ end)
 				font_enum = properties.font_enum or nil,
 			}
 		
+			local dir = (flags["notify_invert"] and -1 or 1)
+			local base_y = flags["notify_y"] or 72
+			local base_x = flags["notify_x"] or 20
+			local offset = (#library.notifications * 28) * dir
+
 			-- Instances
 				local watermark_outline = library:create("Frame", {
 					Parent = notif_holder,
@@ -2957,10 +3005,10 @@ end)
 					Size = UDim2.new(0, 0, 0, 24),
 					BorderColor3 = rgb(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, 20, 0, 72 + (#library.notifications * 28)),
+					Position = UDim2.new(0, base_x, 0, base_y + offset),
 					AutomaticSize = Enum.AutomaticSize.X,
 					BackgroundColor3 = themes.preset.outline,
-					AnchorPoint = Vector2.new(1, 0)
+					AnchorPoint = Vector2.new(0, 0)
 				})
 			
 				local watermark_inline = library:create("Frame", {
@@ -3088,6 +3136,7 @@ end)
 				task.wait(1)
 
 				watermark_outline:Destroy()
+				library:refresh_notifications()
 			end)    
 		end 
 
