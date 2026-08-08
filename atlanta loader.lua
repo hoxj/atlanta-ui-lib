@@ -2232,13 +2232,12 @@ end)
 
 			local character = nil
 			pcall(function()
-				local app = players:GetCharacterAppearanceAsync(lp.UserId)
-				character = app
+				-- CreateHumanoidModelFromUserId properly generates a fully clothed character for ViewportFrames
+				character = players:CreateHumanoidModelFromUserId(lp.UserId)
 				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
-				if not character:FindFirstChildOfClass("Humanoid") then
-					Instance.new("Humanoid", character)
+				if not character.PrimaryPart then
+					character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 				end
-				character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 			end)
 
 			local items = cfg.items; do 
@@ -2774,8 +2773,13 @@ end)
 					
 					if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] and flag_bool("esp_healthtext") then
 						objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-						local textY = fullH - visibleHeight + (visibleHeight / 2) - 6
-						objects[ "health_text" ].Position = dim2(0, - (barW + 6), 0, textY)
+						-- Match the main script: center horizontally on the healthbar, vertically track the top of the fill
+						local hbCenterX = - (barW / 2) - 3
+						local hbFillTopY = fullH - visibleHeight - 2
+						objects[ "health_text" ].AnchorPoint = Vector2.new(0.5, 0.5)
+						objects[ "health_text" ].AutomaticSize = Enum.AutomaticSize.XY
+						objects[ "health_text" ].Size = UDim2.new(0, 0, 0, 0)
+						objects[ "health_text" ].Position = dim2(0, hbCenterX, 0, hbFillTopY)
 						objects[ "health_text" ].Visible = true
 					else
 						if objects[ "health_text" ] then objects[ "health_text" ].Visible = false end
