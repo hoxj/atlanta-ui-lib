@@ -2232,7 +2232,6 @@ end)
 
 			local character = nil
 			pcall(function()
-				-- Use game:GetService directly to avoid cloneref proxy issues with this method
 				character = game:GetService("Players"):CreateHumanoidModelFromUserId(lp.UserId)
 				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
 				if not character.PrimaryPart then
@@ -2240,12 +2239,20 @@ end)
 				end
 			end)
 			if not character then
-				-- Fallback to cloning if the above fails
 				if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
 					lp.Character.Archivable = true
 					character = lp.Character:Clone()
 					if character:FindFirstChild("Animate") then character.Animate:Destroy() end
 				end
+			end
+
+			local function flag_color(key) 
+				local v = flags[key] 
+				return type(v) == "table" and v.Color or v or rgb(255,255,255) 
+			end
+			local function flag_bool(key) 
+				local v = flags[key] 
+				return v == true 
 			end
 
 			local items = cfg.items; do 
@@ -2310,17 +2317,14 @@ end)
 								end
 							end
 							local sizeX = maxV.X - minV.X
-							local sizeY = maxV.Y - minV.Y + 10 -- Extend a bit lower for feet
-							objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 50, 200), math.clamp(sizeY, 80, 260))
+							local sizeY = maxV.Y - minV.Y + 10
+							cfg.objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 50, 200), math.clamp(sizeY, 80, 260))
 						else
-							objects["holder"].Size = UDim2.fromOffset(135, 200) -- Extended static size
+							cfg.objects["holder"].Size = UDim2.fromOffset(135, 200)
 						end
 					end
 				end)
 			end 
-
-			local function flag_color(key) local v = flags[key] return type(v) == "table" and v.Color or v or rgb(255,255,255) end
-			local function flag_bool(key) local v = flags[key] return v == true end
 
 			local objects = cfg.objects; do 
 				objects[ "holder" ] = library:create( "Frame" , {
@@ -2403,198 +2407,59 @@ end)
 					BackgroundColor3 = rgb(255, 255, 255)
 				});
 
-					objects[ "1" ] = library:create( "Frame" , {
+				local cornerNames = { "1", "2", "3", "4", "5", "6", "7", "8" }
+				for _, cornerName in ipairs(cornerNames) do
+					local baseProps = {
 						Parent = objects[ "corners" ];
 						Name = "line";
-						Position = dim2(0, 0, 0, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(0.4, 0, 0, 3);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "1" ];
-						Position = dim2(0, 1, 0, 1);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, -2);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-					
-					objects[ "2" ] = library:create( "Frame" , {
-						Parent = objects[ "corners" ];
-						Name = "line";
-						Position = dim2(0, 0, 0, 1);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(0, 3, 0.25, 0);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "2" ];
-						Position = dim2(0, 1, 0, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, 1);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-					
-					objects[ "3" ] = library:create( "Frame" , {
-						AnchorPoint = vec2(1, 0);
-						Parent = objects[ "corners" ];
-						Name = "line";
-						Position = dim2(1, 0, 0, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(0.4, 0, 0, 3);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "3" ];
-						Position = dim2(0, 1, 0, 1);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, -2);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-					
-					objects[ "4" ] = library:create( "Frame" , {
-						AnchorPoint = vec2(1, 0);
-						Parent = objects[ "corners" ];
-						Name = "line";
-						Position = dim2(1, 0, 0, 1);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(0, 3, 0.25, 0);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "4" ];
-						Position = dim2(0, 1, 0, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, 1);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-					
-					objects[ "5" ] = library:create( "Frame" , {
-						AnchorPoint = vec2(0, 1);
-						Parent = objects[ "corners" ];
-						Name = "line";
-						Position = dim2(0, -1, 1, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(0.4, 0, 0, 3);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "5" ];
-						Position = dim2(0, 1, 0, 1);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, -2);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-					
-					objects[ "6" ] = library:create( "Frame" , {
-						BorderColor3 = rgb(0, 0, 0);
-						Rotation = 180;
-						Parent = objects[ "corners" ];
-						Name = "line";
-						Position = dim2(0, 0, 1, -4);
-						AnchorPoint = vec2(0, 1);
-						Size = dim2(0, 3, 0.25, 1);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "6" ];
-						Position = dim2(0, 1, 0, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, 1);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-					
-					objects[ "7" ] = library:create( "Frame" , {
-						AnchorPoint = vec2(1, 1);
-						Parent = objects[ "corners" ];
-						Name = "line";
-						Position = dim2(1, -1, 1, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(0.4, 0, 0, 3);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "7" ];
-						Position = dim2(0, 1, 0, 1);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, -2);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-					
-					objects[ "8" ] = library:create( "Frame" , {
-						BorderColor3 = rgb(0, 0, 0);
-						Rotation = 180;
-						Parent = objects[ "corners" ];
-						Name = "line";
-						Position = dim2(1, 0, 1, -4);
-						AnchorPoint = vec2(1, 1);
-						Size = dim2(0, 3, 0.25, 1);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0)
-					});
-					
-					library:create( "Frame" , {
-						Parent = objects[ "8" ];
-						Position = dim2(0, 1, 0, -2);
-						BorderColor3 = rgb(0, 0, 0);
-						Size = dim2(1, -2, 1, 1);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color")
-					});
-				-- 
-				
-				-- Healthbar
-					objects[ "healthbar_holder" ] = library:create( "Frame" , {
-						AnchorPoint = vec2(0, 0);
-						Parent = objects[ "holder" ];
-						Name = "HealthBarOutline";
 						BorderColor3 = rgb(0, 0, 0);
 						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0);
-						Visible = false;
-					});
-					
-					objects[ "healthbar_container" ] = library:create( "Frame" , {
-						Parent = objects[ "healthbar_holder" ];
-						Name = "HealthBarContainer";
-						BackgroundTransparency = 1;
-						ClipsDescendants = true;
-						BorderSizePixel = 0;
-					});
-					
-					objects[ "healthbar" ] = library:create( "Frame" , {
-						Parent = objects[ "healthbar_container" ];
-						Name = "HealthBar";
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(255, 255, 255)
-					});
+						BackgroundColor3 = flag_color("esp_box_color");
+					}
 
-					objects[ "healthbar_gradient" ] = library:create( "UIGradient" , {
-						Parent = objects[ "healthbar" ];
-						Rotation = 90;
-					});
-				--
+					if cornerName == "1" then baseProps.Position = dim2(0, 0, 0, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
+					elseif cornerName == "2" then baseProps.Position = dim2(0, 0, 0, 1); baseProps.Size = dim2(0, 3, 0.25, 0)
+					elseif cornerName == "3" then baseProps.AnchorPoint = vec2(1, 0); baseProps.Position = dim2(1, 0, 0, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
+					elseif cornerName == "4" then baseProps.AnchorPoint = vec2(1, 0); baseProps.Position = dim2(1, 0, 0, 1); baseProps.Size = dim2(0, 3, 0.25, 0)
+					elseif cornerName == "5" then baseProps.AnchorPoint = vec2(0, 1); baseProps.Position = dim2(0, -1, 1, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
+					elseif cornerName == "6" then baseProps.Rotation = 180; baseProps.AnchorPoint = vec2(0, 1); baseProps.Position = dim2(0, 0, 1, -4); baseProps.Size = dim2(0, 3, 0.25, 1)
+					elseif cornerName == "7" then baseProps.AnchorPoint = vec2(1, 1); baseProps.Position = dim2(1, -1, 1, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
+					elseif cornerName == "8" then baseProps.Rotation = 180; baseProps.AnchorPoint = vec2(1, 1); baseProps.Position = dim2(1, 0, 1, -4); baseProps.Size = dim2(0, 3, 0.25, 1)
+					end
+
+					objects[cornerName] = library:create("Frame", baseProps)
+				end
+				
+				objects[ "healthbar_holder" ] = library:create( "Frame" , {
+					AnchorPoint = vec2(0, 0);
+					Parent = objects[ "holder" ];
+					Name = "HealthBarOutline";
+					BorderColor3 = rgb(0, 0, 0);
+					BorderSizePixel = 0;
+					BackgroundColor3 = rgb(0, 0, 0);
+					Visible = false;
+				});
+				
+				objects[ "healthbar_container" ] = library:create( "Frame" , {
+					Parent = objects[ "healthbar_holder" ];
+					Name = "HealthBarContainer";
+					BackgroundTransparency = 1;
+					ClipsDescendants = true;
+					BorderSizePixel = 0;
+				});
+				
+				objects[ "healthbar" ] = library:create( "Frame" , {
+					Parent = objects[ "healthbar_container" ];
+					Name = "HealthBar";
+					BorderSizePixel = 0;
+					BackgroundColor3 = rgb(255, 255, 255)
+				});
+
+				objects[ "healthbar_gradient" ] = library:create( "UIGradient" , {
+					Parent = objects[ "healthbar" ];
+					Rotation = 90;
+				});
+				
 				objects[ "box_fill" ] = library:create( "Frame" , {
 					Parent = objects[ "holder" ];
 					Name = "\0";
@@ -2605,7 +2470,7 @@ end)
 					BackgroundColor3 = rgb(255, 255, 255)
 				});
 				local box_fill_grad = library:create( "UIGradient" , { Parent = objects[ "box_fill" ]; Rotation = -270 });
-				--
+				
 				objects[ "health_text" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
 					Parent = objects[ "holder" ];
@@ -2619,7 +2484,7 @@ end)
 					BorderSizePixel = 0;
 					TextSize = 12;
 				});
-				--
+				
 				objects[ "flag" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
 					Parent = objects[ "holder" ];
@@ -2634,7 +2499,7 @@ end)
 					TextSize = 12;
 					TextXAlignment = Enum.TextXAlignment.Left;
 				});
-				--
+				
 				objects[ "team_flag" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
 					Parent = objects[ "holder" ];
@@ -2649,88 +2514,82 @@ end)
 					TextSize = 12;
 					TextXAlignment = Enum.TextXAlignment.Left;
 				});
-				--
+				
+				objects[ "distance" ] = library:create( "TextLabel" , {
+					FontFace = library.font;
+					TextColor3 = flag_color("esp_distance_color");
+					BorderColor3 = rgb(0, 0, 0);
+					Text = "127m";
+					Parent = objects[ "holder" ];
+					TextStrokeTransparency = 0;
+					Name = "\0";
+					Size = dim2(1, 0, 0, 0);
+					BackgroundTransparency = 1;
+					Position = dim2(0.5, 0, 1, 5);
+					AnchorPoint = vec2(0.5, 0);
+					BorderSizePixel = 0;
+					AutomaticSize = Enum.AutomaticSize.Y;
+					TextSize = 12;
+				});                
 
-				-- Distance esp
-					objects[ "distance" ] = library:create( "TextLabel" , {
-						FontFace = library.font;
-						TextColor3 = flag_color("esp_distance_color");
-						BorderColor3 = rgb(0, 0, 0);
-						Text = "127m";
-						Parent = objects[ "holder" ];
-						TextStrokeTransparency = 0;
-						Name = "\0";
-						Size = dim2(1, 0, 0, 0);
-						BackgroundTransparency = 1;
-						Position = dim2(0.5, 0, 1, 5);
-						AnchorPoint = vec2(0.5, 0);
-						BorderSizePixel = 0;
-						AutomaticSize = Enum.AutomaticSize.Y;
-						TextSize = 12;
-					});                
-				-- 
+				objects[ "weapon" ] = library:create( "TextLabel" , {
+					FontFace = library.font;
+					TextColor3 = flag_color("esp_weapon_color");
+					BorderColor3 = rgb(0, 0, 0);
+					Text = "[ Weapon ]";
+					Parent = objects[ "holder" ];
+					TextStrokeTransparency = 0;
+					Name = "\0";
+					Size = dim2(1, 0, 0, 0);
+					BackgroundTransparency = 1;
+					Position = dim2(0.5, 0, 1, 19);
+					AnchorPoint = vec2(0.5, 0);
+					BorderSizePixel = 0;
+					AutomaticSize = Enum.AutomaticSize.Y;
+					TextSize = 12;
+				});
 
-				-- Weapon esp
-					objects[ "weapon" ] = library:create( "TextLabel" , {
-						FontFace = library.font;
-						TextColor3 = flag_color("esp_weapon_color");
-						BorderColor3 = rgb(0, 0, 0);
-						Text = "[ Weapon ]";
-						Parent = objects[ "holder" ];
-						TextStrokeTransparency = 0;
-						Name = "\0";
-						Size = dim2(1, 0, 0, 0);
-						BackgroundTransparency = 1;
-						Position = dim2(0.5, 0, 1, 19);
-						AnchorPoint = vec2(0.5, 0);
-						BorderSizePixel = 0;
-						AutomaticSize = Enum.AutomaticSize.Y;
-						TextSize = 12;
-					});
-				--  
-
-				-- Ammo esp
-					objects[ "ammobar_holder" ] = library:create( "Frame" , {
-						AnchorPoint = vec2(0, 0);
-						Parent = objects[ "holder" ];
-						Name = "AmmoBarOutline";
-						BorderColor3 = rgb(0, 0, 0);
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(0, 0, 0);
-						Visible = false;
-					});
-					
-					objects[ "ammobar_container" ] = library:create( "Frame" , {
-						Parent = objects[ "ammobar_holder" ];
-						Name = "AmmoBarContainer";
-						BackgroundTransparency = 1;
-						ClipsDescendants = true;
-						BorderSizePixel = 0;
-					});
-					
-					objects[ "ammobar" ] = library:create( "Frame" , {
-						Parent = objects[ "ammobar_container" ];
-						Name = "AmmoBar";
-						BorderSizePixel = 0;
-						BackgroundColor3 = rgb(255, 215, 60);
-					});
-					
-					objects[ "ammo_text" ] = library:create( "TextLabel" , {
-						FontFace = library.font;
-						TextColor3 = flag_color("esp_ammo_text_color");
-						BorderColor3 = rgb(0, 0, 0);
-						Text = "30/30";
-						Parent = objects[ "holder" ];
-						TextStrokeTransparency = 0;
-						Name = "\0";
-						Size = dim2(1, 0, 0, 0);
-						BackgroundTransparency = 1;
-						Position = dim2(0.5, 0, 1, 3);
-						AnchorPoint = vec2(0.5, 0);
-						BorderSizePixel = 0;
-						AutomaticSize = Enum.AutomaticSize.Y;
-						TextSize = 12;
-					});
+				objects[ "ammobar_holder" ] = library:create( "Frame" , {
+					AnchorPoint = vec2(0, 0);
+					Parent = objects[ "holder" ];
+					Name = "AmmoBarOutline";
+					BorderColor3 = rgb(0, 0, 0);
+					BorderSizePixel = 0;
+					BackgroundColor3 = rgb(0, 0, 0);
+					Visible = false;
+				});
+				
+				objects[ "ammobar_container" ] = library:create( "Frame" , {
+					Parent = objects[ "ammobar_holder" ];
+					Name = "AmmoBarContainer";
+					BackgroundTransparency = 1;
+					ClipsDescendants = true;
+					BorderSizePixel = 0;
+				});
+				
+				objects[ "ammobar" ] = library:create( "Frame" , {
+					Parent = objects[ "ammobar_container" ];
+					Name = "AmmoBar";
+					BorderSizePixel = 0;
+					BackgroundColor3 = rgb(255, 215, 60);
+				});
+				
+				objects[ "ammo_text" ] = library:create( "TextLabel" , {
+					FontFace = library.font;
+					TextColor3 = flag_color("esp_ammo_text_color");
+					BorderColor3 = rgb(0, 0, 0);
+					Text = "30/30";
+					Parent = objects[ "holder" ];
+					TextStrokeTransparency = 0;
+					Name = "\0";
+					Size = dim2(1, 0, 0, 0);
+					BackgroundTransparency = 1;
+					Position = dim2(0.5, 0, 1, 3);
+					AnchorPoint = vec2(0.5, 0);
+					BorderSizePixel = 0;
+					AutomaticSize = Enum.AutomaticSize.Y;
+					TextSize = 12;
+				});
 			end 
 
 			cfg.change_health = function()
@@ -2740,7 +2599,6 @@ end)
 				local textSize = (st and st.TextSize) or 14
 				local lineH = math.max(12, textSize - 2) + 4
 				
-				-- Health Bar updates
 				local fullH = 190
 				if flag_bool("esp_healthbar") and objects[ "healthbar_holder" ].Parent == objects[ "holder" ] then
 					local target = 0.5 + 0.5 * math.sin(tick() * 2)
@@ -2766,22 +2624,24 @@ end)
 					if flag_bool("esp_healthbar_resize_outline") then
 						objects[ "healthbar_holder" ].Size = UDim2.fromOffset(barW + 2, visibleHeight + 2)
 						objects[ "healthbar_holder" ].Position = UDim2.fromOffset(- (barW + 4), fullH - visibleHeight - 1)
+						objects[ "healthbar_holder" ].Visible = true
+						
 						objects[ "healthbar_container" ].Size = UDim2.fromOffset(barW, visibleHeight)
 						objects[ "healthbar_container" ].Position = UDim2.fromOffset(1, 1)
 					else
 						objects[ "healthbar_holder" ].Size = UDim2.fromOffset(barW + 2, fullH + 2)
 						objects[ "healthbar_holder" ].Position = UDim2.fromOffset(- (barW + 4), -1)
+						objects[ "healthbar_holder" ].Visible = true
+						
 						objects[ "healthbar_container" ].Size = UDim2.fromOffset(barW, visibleHeight)
 						objects[ "healthbar_container" ].Position = UDim2.fromOffset(1, fullH - visibleHeight + 1)
 					end
-					objects[ "healthbar_holder" ].Visible = true
 					
 					objects[ "healthbar" ].Size = UDim2.fromOffset(barW, fullH + 1)
 					objects[ "healthbar" ].Position = UDim2.fromOffset(0, -((fullH + 1) - barHeight))
 					
 					if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] and flag_bool("esp_healthtext") then
 						objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-						-- Match the main script: center horizontally on the healthbar, vertically track the top of the fill
 						local hbCenterX = - (barW / 2) - 3
 						local hbFillTopY = fullH - visibleHeight - 2
 						objects[ "health_text" ].AnchorPoint = Vector2.new(0.5, 0.5)
@@ -2797,7 +2657,6 @@ end)
 					if objects[ "health_text" ] then objects[ "health_text" ].Visible = false end
 				end
 				
-				-- Ammo ESP updates
 				local ammoTarget = 0.5 + 0.5 * math.sin(tick() * 1.5)
 				cfg._ammo_prev = (cfg._ammo_prev or ammoTarget) + (ammoTarget - (cfg._ammo_prev or ammoTarget)) * math.min(smooth * 30, 1)
 				local ammoRatio = math.clamp(cfg._ammo_prev, 0, 1)
@@ -2878,7 +2737,6 @@ end)
 				objects["weapon"].TextSize = math.max(8, textSize - 2)
 				if objects["weapon"].FontFace then objects["weapon"].FontFace = fontFace end
 
-				-- Ammo bar & text setup
 				objects["ammobar_holder"].Visible = flag_bool("esp_ammo_bar")
 				safe_set_parent(objects["ammobar_holder"], flag_bool("esp_ammo_bar") and objects["holder"] or library.cache)
 				
@@ -2950,8 +2808,9 @@ end)
 				local boxCol = flag_color("esp_box_color")
 				objects["box_color"].Color = boxCol
 				for _, corner in objects["corners"]:GetChildren() do
-					local fr = corner:FindFirstChild("Frame") or corner:GetChildren()[1]
-					if fr then pcall(function() fr.BackgroundColor3 = boxCol end) end
+					if corner.Name == "line" then
+						pcall(function() corner.BackgroundColor3 = boxCol end)
+					end
 				end
 
 				objects["box_fill"].Visible = flag_bool("esp_box_fill")
@@ -2977,7 +2836,6 @@ end)
 					end
 				end
 				
-				-- Run dynamic layout update instantly on refresh
 				cfg.change_health()
 			end
 
