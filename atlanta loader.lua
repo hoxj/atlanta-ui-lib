@@ -2232,13 +2232,21 @@ end)
 
 			local character = nil
 			pcall(function()
-				-- CreateHumanoidModelFromUserId properly generates a fully clothed character for ViewportFrames
-				character = players:CreateHumanoidModelFromUserId(lp.UserId)
+				-- Use game:GetService directly to avoid cloneref proxy issues with this method
+				character = game:GetService("Players"):CreateHumanoidModelFromUserId(lp.UserId)
 				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
 				if not character.PrimaryPart then
 					character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 				end
 			end)
+			if not character then
+				-- Fallback to cloning if the above fails
+				if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+					lp.Character.Archivable = true
+					character = lp.Character:Clone()
+					if character:FindFirstChild("Animate") then character.Animate:Destroy() end
+				end
+			end
 
 			local items = cfg.items; do 
 				items.viewportframe = library:create( "ViewportFrame" , {
@@ -2277,7 +2285,7 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1, -6)) * angle(0, math.rad(cfg.rotation), 0))
+						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 0, -6)) * angle(0, math.rad(cfg.rotation), 0))
 						
 						if flag_bool("esp_dynamic_box") then
 							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
