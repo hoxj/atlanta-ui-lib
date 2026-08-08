@@ -1778,9 +1778,9 @@ end)
 				:colorpicker({name = "Glow", color = themes.preset.glow, callback = function(color, alpha)
 					library:update_theme("glow", color)
 				end, flag = "Glow"})
-				local section = column:section({name = "Other"})
 				section:label({name = "UI Bind"})
 				:keybind({callback = window.set_menu_visibility, key = Enum.KeyCode.Insert})
+				local section = column:section({name = "Other"})
 				section:toggle({name = "Keybind List", flag = "keybind_list", callback = function(bool)
 					library.keybind_list_frame.Visible = bool
 					if bool and flags["keybind_list_x"] ~= nil and flags["keybind_list_y"] ~= nil then
@@ -2074,18 +2074,19 @@ end)
 					if p then
 						library.viewing_player = library.selected_player
 						if library.view_conn then library.view_conn:Disconnect() end
-						local function updateView()
+						library.view_conn = run.Heartbeat:Connect(function()
 							if library.viewing_player ~= library.selected_player or not p.Parent then
-								if library.view_conn then library.view_conn:Disconnect() library.view_conn = nil end
+								library.view_conn:Disconnect()
+								library.view_conn = nil
 								return
 							end
 							if p.Character then
 								local h = p.Character:FindFirstChildOfClass("Humanoid")
-								if h then ws.CurrentCamera.CameraSubject = h end
+								if h and ws.CurrentCamera.CameraSubject ~= h then
+									ws.CurrentCamera.CameraSubject = h
+								end
 							end
-						end
-						updateView()
-						library.view_conn = p.CharacterAdded:Connect(updateView)
+						end)
 					end
 				end})
 				section:button_holder({})
@@ -2230,11 +2231,15 @@ end)
 			local get_settings = props.get_settings or library.esp_preview_get_settings
 
 			local character = nil
-			if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-				lp.Character.Archivable = true
-				character = lp.Character:Clone()
+			pcall(function()
+				local app = players:GetCharacterAppearanceAsync(lp.UserId)
+				character = app
 				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
-			end
+				if not character:FindFirstChildOfClass("Humanoid") then
+					Instance.new("Humanoid", character)
+				end
+				character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+			end)
 
 			local items = cfg.items; do 
 				items.viewportframe = library:create( "ViewportFrame" , {
@@ -2274,6 +2279,35 @@ end)
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
 						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1, -6)) * angle(0, math.rad(cfg.rotation), 0))
+						
+						if flag_bool("esp_dynamic_box") then
+							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
+							local minV = Vector2.new(math.huge, math.huge)
+							local maxV = Vector2.new(-math.huge, -math.huge)
+							for _, part in ipairs(character:GetChildren()) do
+								if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+									local sp, onScreen = items.camera:WorldToViewportPoint(part.Position)
+									if onScreen then
+										local cf = part.CFrame
+										local sz = part.Size
+										local HX, HY, HZ = sz.X * 0.5, sz.Y * 0.5, sz.Z * 0.5
+										local RX, UY, LZ = cf.RightVector, cf.UpVector, cf.LookVector
+										local DepthScale = FocalLength / sp.Z
+										local Ex = (math.abs(RX.X * HX) + math.abs(UY.X * HY) + math.abs(LZ.X * HZ)) * DepthScale
+										local Ey = (math.abs(RX.Y * HX) + math.abs(UY.Y * HY) + math.abs(LZ.Y * HZ)) * DepthScale
+										if sp.X - Ex < minV.X then minV.X = sp.X - Ex end
+										if sp.X + Ex > maxV.X then maxV.X = sp.X + Ex end
+										if sp.Y - Ey < minV.Y then minV.Y = sp.Y - Ey end
+										if sp.Y + Ey > maxV.Y then maxV.Y = sp.Y + Ey end
+									end
+								end
+							end
+							local sizeX = maxV.X - minV.X
+							local sizeY = maxV.Y - minV.Y + 10 -- Extend a bit lower for feet
+							objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 50, 200), math.clamp(sizeY, 80, 260))
+						else
+							objects["holder"].Size = UDim2.fromOffset(135, 200) -- Extended static size
+						end
 					end
 				end)
 			end 
@@ -2798,25 +2832,6 @@ end)
 				
 				if flag_bool("esp_weapon") and objects[ "weapon" ].Parent == objects[ "holder" ] then
 					objects[ "weapon" ].Position = dim2(0.5, 0, 1, currentY)
-				end
-
-				-- Dynamic box simulation for preview
-				if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-					if flag_bool("esp_dynamic_box") then
-						local minV = Vector3.new(math.huge, math.huge, math.huge)
-						local maxV = Vector3.new(-math.huge, -math.huge, -math.huge)
-						for _, part in ipairs(character:GetChildren()) do
-							if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-								local pos = part.Position
-								minV = Vector3.new(math.min(minV.X, pos.X), math.min(minV.Y, pos.Y), math.min(minV.Z, pos.Z))
-								maxV = Vector3.new(math.max(maxV.X, pos.X), math.max(maxV.Y, pos.Y), math.max(maxV.Z, pos.Z))
-							end
-						end
-						local size = (maxV - minV) * items.camera.ViewportSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView/2)) * (character.PrimaryPart.Position.Z - items.camera.CFrame.Position.Z))
-						objects["holder"].Size = UDim2.fromOffset(math.clamp(size.X, 50, 200), math.clamp(size.Y, 80, 250))
-					else
-						objects["holder"].Size = UDim2.fromOffset(135, 190)
-					end
 				end
 			end
 
@@ -6622,10 +6637,6 @@ end)
 				-- library.selected_player = players[tostring(player)]
 				
 				TextButton.MouseButton1Click:Connect(function()
-					if nameStr == lp.Name then 
-						return 
-					end 
-
 					local oldSelected = library.selected_player
 					if oldSelected then
 						local oldPath = library.playerlist_data[oldSelected]
@@ -6726,6 +6737,17 @@ end)
 				local player_object = cfg.create_player(player.Name)
 				insert(library.playerlist_data, player_object)
 			end 
+
+			-- Select local player by default on execute
+			if library.playerlist_data[lp.Name] then
+				local path = library.playerlist_data[lp.Name]
+				library.selected_player = lp.Name
+				path.player_name.TextColor3 = themes.preset.accent
+				library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
+				if cfg.labels.name then cfg.labels.name.set("User: " .. lp.Name) end
+				if cfg.labels.display then cfg.labels.display.set("DisplayName: " .. lp.DisplayName) end
+				if cfg.labels.uid then cfg.labels.uid.set("User Id: " .. lp.UserId) end
+			end
 
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
