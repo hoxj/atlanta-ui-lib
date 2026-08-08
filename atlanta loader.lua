@@ -6650,7 +6650,11 @@ end)
 					player_name.TextColor3 = themes.preset.accent 
 
 					library.selected_player = player_name.Text
-					library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
+					
+					-- Don't update the dropdown if selecting the local player
+					if path.priority_text.Text ~= "LocalPlayer" then
+						library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
+					end
 
 					if cfg.selected_icon and players[player_name.Text] then
 						cfg.selected_icon.Image = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", players[player_name.Text].UserId)
@@ -6697,13 +6701,13 @@ end)
 			end 
 
 			function library.prioritize(text) 
-				if not library.selected_player then 
+				if not library.selected_player or not text then 
 					return 
 				end 
 
 				local path = library.playerlist_data[library.selected_player]
 				path.priority_text.Text = text
-				path.priority_text.TextColor3 = patterns[text]
+				path.priority_text.TextColor3 = patterns[text] or themes.preset.text
 				path.priority = text
 				if path.player_name and library.selected_player and selected_button ~= path.player_name then
 					path.player_name.TextColor3 = get_display_color(path)
@@ -6745,9 +6749,6 @@ end)
 					local path = library.playerlist_data[lp.Name]
 					library.selected_player = lp.Name
 					path.player_name.TextColor3 = themes.preset.accent
-					if library.config_flags["PLAYERLIST_DROPDOWN"] then
-						library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
-					end
 					if cfg.labels and cfg.labels.name and cfg.labels.name.set then
 						cfg.labels.name.set("User: " .. lp.Name)
 						cfg.labels.display.set("DisplayName: " .. lp.DisplayName)
