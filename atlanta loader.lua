@@ -6739,15 +6739,22 @@ end)
 			end 
 
 			-- Select local player by default on execute
-			if library.playerlist_data[lp.Name] then
-				local path = library.playerlist_data[lp.Name]
-				library.selected_player = lp.Name
-				path.player_name.TextColor3 = themes.preset.accent
-				library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
-				if cfg.labels.name then cfg.labels.name.set("User: " .. lp.Name) end
-				if cfg.labels.display then cfg.labels.display.set("DisplayName: " .. lp.DisplayName) end
-				if cfg.labels.uid then cfg.labels.uid.set("User Id: " .. lp.UserId) end
-			end
+			task.spawn(function()
+				task.wait()
+				if library.playerlist_data[lp.Name] then
+					local path = library.playerlist_data[lp.Name]
+					library.selected_player = lp.Name
+					path.player_name.TextColor3 = themes.preset.accent
+					if library.config_flags["PLAYERLIST_DROPDOWN"] then
+						library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
+					end
+					if cfg.labels and cfg.labels.name and cfg.labels.name.set then
+						cfg.labels.name.set("User: " .. lp.Name)
+						cfg.labels.display.set("DisplayName: " .. lp.DisplayName)
+						cfg.labels.uid.set("User Id: " .. lp.UserId)
+					end
+				end
+			end)
 
 			self:textbox({name = "Search", callback = function(txt)
 				cfg.search(txt)
