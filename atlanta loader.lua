@@ -2232,19 +2232,21 @@ end)
 
 			local character = nil
 			pcall(function()
-				character = game:GetService("Players"):CreateHumanoidModelFromUserId(lp.UserId)
-				if character:FindFirstChild("Animate") then character.Animate:Destroy() end
-				if not character.PrimaryPart then
-					character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
-				end
-			end)
-			if not character then
 				if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
 					lp.Character.Archivable = true
 					character = lp.Character:Clone()
 					if character:FindFirstChild("Animate") then character.Animate:Destroy() end
+					-- Clean up scripts so they don't run in the preview
+					for _, v in ipairs(character:GetDescendants()) do
+						if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript") then
+							v:Destroy()
+						end
+					end
+					if not character.PrimaryPart then
+						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
+					end
 				end
-			end
+			end)
 
 			local function flag_color(key) 
 				local v = flags[key] 
@@ -2309,10 +2311,16 @@ end)
 										local DepthScale = FocalLength / sp.Z
 										local Ex = (math.abs(RX.X * HX) + math.abs(UY.X * HY) + math.abs(LZ.X * HZ)) * DepthScale
 										local Ey = (math.abs(RX.Y * HX) + math.abs(UY.Y * HY) + math.abs(LZ.Y * HZ)) * DepthScale
-										if sp.X - Ex < minV.X then minV.X = sp.X - Ex end
-										if sp.X + Ex > maxV.X then maxV.X = sp.X + Ex end
-										if sp.Y - Ey < minV.Y then minV.Y = sp.Y - Ey end
-										if sp.Y + Ey > maxV.Y then maxV.Y = sp.Y + Ey end
+										local minX = sp.X - Ex
+										local maxX = sp.X + Ex
+										local minY = sp.Y - Ey
+										local maxY = sp.Y + Ey
+										
+										-- Vector2 components are read-only, must create new Vector2s
+										if minX < minV.X then minV = Vector2.new(minX, minV.Y) end
+										if maxX > maxV.X then maxV = Vector2.new(maxX, maxV.Y) end
+										if minY < minV.Y then minV = Vector2.new(minV.X, minY) end
+										if maxY > maxV.Y then maxV = Vector2.new(maxV.X, maxY) end
 									end
 								end
 							end
@@ -2641,14 +2649,19 @@ end)
 					objects[ "healthbar" ].Position = UDim2.fromOffset(0, -((fullH + 1) - barHeight))
 					
 					if objects[ "health_text" ] and objects[ "health_text" ].Parent == objects[ "holder" ] and flag_bool("esp_healthtext") then
-						objects[ "health_text" ].Text = tostring(math.floor(mult * 100))
-						local hbCenterX = - (barW / 2) - 3
-						local hbFillTopY = fullH - visibleHeight - 2
-						objects[ "health_text" ].AnchorPoint = Vector2.new(0.5, 0.5)
-						objects[ "health_text" ].AutomaticSize = Enum.AutomaticSize.XY
-						objects[ "health_text" ].Size = UDim2.new(0, 0, 0, 0)
-						objects[ "health_text" ].Position = dim2(0, hbCenterX, 0, hbFillTopY)
-						objects[ "health_text" ].Visible = true
+						local hpVal = math.floor(mult * 100)
+						if hpVal >= 100 then
+							objects["health_text"].Visible = false
+						else
+							objects["health_text"].Visible = true
+							objects["health_text"].Text = tostring(hpVal)
+							local hbCenterX = - (barW / 2) - 3
+							local hbFillTopY = fullH - visibleHeight - 2
+							objects["health_text"].AnchorPoint = Vector2.new(0.5, 0.5)
+							objects["health_text"].AutomaticSize = Enum.AutomaticSize.XY
+							objects["health_text"].Size = UDim2.new(0, 0, 0, 0)
+							objects["health_text"].Position = dim2(0, hbCenterX, 0, hbFillTopY)
+						end
 					else
 						if objects[ "health_text" ] then objects[ "health_text" ].Visible = false end
 					end
