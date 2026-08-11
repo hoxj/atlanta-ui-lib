@@ -2061,7 +2061,7 @@ end)
 				end
 				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight", "Mesh Chams", "Glow"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
 				section:button_holder({})
-				section:button({name = "Set as target", callback = function()
+				section:button({name = "Target", callback = function()
 					if not library.selected_player then return end
 					if library.current_target == library.selected_player then
 						local playerName = library.current_target
@@ -2107,7 +2107,7 @@ end)
 						end)
 					end
 				end})
-				section:button({name = "Teleport", callback = function()
+				section:button({name = "TP", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if not p or not p.Character then return end
@@ -2320,10 +2320,10 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Move character up to 2 so legs aren't cut off
-						local charPos = Vector3.new(0, 2, -6)
+						-- Move character up to 3 so legs aren't cut off, and move camera to match
+						local charPos = Vector3.new(0, 3, -7)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 2, 0), charPos)
+						items.camera.CFrame = cfr(Vector3.new(0, 3, 0), charPos)
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -2341,8 +2341,6 @@ end)
 									local cf = part.CFrame
 									local sz = part.Size
 									local HX, HY, HZ = sz.X * 0.5, sz.Y * 0.5, sz.Z * 0.5
-									
-									-- Project all 8 corners of the part's bounding box
 									for _, offset in ipairs({
 										Vector3.new(HX, HY, HZ), Vector3.new(HX, HY, -HZ),
 										Vector3.new(HX, -HY, HZ), Vector3.new(HX, -HY, -HZ),
@@ -2378,7 +2376,7 @@ end)
 							cfg.objects["holder"].Position = UDim2.fromOffset(math.floor((vpX - 110) / 2), math.floor((vpY - 150) / 2))
 						end
 						
-						-- Team Color application for ESP Preview
+						-- Team Color application for ESP Preview (Safe checks to prevent errors)
 						local teamCol = lp.Team and lp.Team.TeamColor and lp.Team.TeamColor.Color or rgb(255, 255, 255)
 						local teamElems = flags["ESP_TEAM_COLOR_ELEMENTS"] or {}
 						if type(teamElems) == "string" then teamElems = {teamElems} end
@@ -2386,12 +2384,17 @@ end)
 							for _, v in ipairs(teamElems) do if v == elem then return true end end
 							return false
 						end
-						if hasElem("Name") then objects["name"].TextColor3 = teamCol end
-						if hasElem("Distance") then objects["distance"].TextColor3 = teamCol end
-						if hasElem("Tool") then objects["weapon"].TextColor3 = teamCol end
-						if hasElem("Box") then objects["box_color"].Color = teamCol end
-						if hasElem("Box Fill") then
-							local grad = objects["box_fill"]:FindFirstChildOfClass("UIGradient")
+						
+						local function set_obj_prop(obj_name, prop, val)
+							if cfg.objects[obj_name] then cfg.objects[obj_name][prop] = val end
+						end
+
+						if hasElem("Name") then set_obj_prop("name", "TextColor3", teamCol) end
+						if hasElem("Distance") then set_obj_prop("distance", "TextColor3", teamCol) end
+						if hasElem("Tool") then set_obj_prop("weapon", "TextColor3", teamCol) end
+						if hasElem("Box") then set_obj_prop("box_color", "Color", teamCol) end
+						if hasElem("Box Fill") and cfg.objects["box_fill"] then
+							local grad = cfg.objects["box_fill"]:FindFirstChildOfClass("UIGradient")
 							if grad then grad.Color = ColorSequence.new(teamCol) end
 						end
 						if hasElem("Mesh Chams") or hasElem("Glow") then
