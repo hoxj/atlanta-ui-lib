@@ -2320,10 +2320,10 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Move character up to 4 so legs aren't cut off, and move camera to match
-						local charPos = Vector3.new(0, 4, -8)
+						-- Move character up to 5 so legs aren't cut off, and move camera closer (-6) to make it bigger
+						local charPos = Vector3.new(0, 5, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 4, 0), charPos)
+						items.camera.CFrame = cfr(Vector3.new(0, 5, 0), charPos)
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -6168,7 +6168,7 @@ end)
 			local text = library:create("TextLabel", {
 				Parent = contrast,
 				Name = "",
-				TextWrapped = false, -- Prevents text sliding when button is narrow
+				TextWrapped = false, 
 				ZIndex = 2;
 				TextColor3 = themes.preset.text,
 				BorderColor3 = rgb(0, 0, 0),
@@ -6177,6 +6177,7 @@ end)
 				Position = dim2(0, 4, 0, -1),
 				BackgroundTransparency = 1,
 				TextTruncate = Enum.TextTruncate.AtEnd,
+				TextXAlignment = Enum.TextXAlignment.Center, -- Forces text to be perfectly centered
 				BorderSizePixel = 0,
 				FontFace = library.font,
 				TextSize = 12,
