@@ -2059,7 +2059,7 @@ end)
 						end
 					})
 				end
-				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
+				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight", "Mesh Chams", "Glow"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
 				section:button_holder({})
 				section:button({name = "Set as target", callback = function()
 					if not library.selected_player then return end
@@ -2080,7 +2080,6 @@ end)
 						library.prioritize("Priority")
 					end
 				end})
-				section:button_holder({})
 				section:button({name = "View", callback = function()
 					if not library.selected_player then return end
 					local p = players:FindFirstChild(library.selected_player)
@@ -2108,7 +2107,6 @@ end)
 						end)
 					end
 				end})
-				section:button_holder({})
 				section:button({name = "Teleport", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
@@ -2322,51 +2320,86 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Position character at 0,1,-6 and camera to look at it
-						local charPos = Vector3.new(0, 1, -6)
+						-- Move character up to 2 so legs aren't cut off
+						local charPos = Vector3.new(0, 2, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 1, 0), charPos)
+						items.camera.CFrame = cfr(Vector3.new(0, 2, 0), charPos)
 						
 						if flag_bool("esp_dynamic_box") then
-							-- Exact math from main script
-							local vpY = items.viewportframe.AbsoluteSize.Y
-							if vpY <= 0 then vpY = 180 end
-							local FocalLength = vpY / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
+							local camCF = items.camera.CFrame
+							local camPos = camCF.Position
+							local lookDir = camCF.LookVector
+							local rightVec = camCF.RightVector
+							local upVec = camCF.UpVector
+							local vpSize = items.viewportframe.AbsoluteSize
+							local focalLength = (vpSize.Y / 2) / math.tan(math.rad(items.camera.FieldOfView / 2))
 							
 							local minV = Vector2.new(math.huge, math.huge)
 							local maxV = Vector2.new(-math.huge, -math.huge)
 							for _, part in ipairs(character:GetChildren()) do
 								if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-									local sp, onScreen = items.camera:WorldToViewportPoint(part.Position)
-									if onScreen and sp.Z > 0 then
-										local cf = part.CFrame
-										local sz = part.Size
-										local HX, HY, HZ = sz.X * 0.5, sz.Y * 0.5, sz.Z * 0.5
-										local RX, UY, LZ = cf.RightVector, cf.UpVector, cf.LookVector
-										local DepthScale = FocalLength / sp.Z
-										local Ex = (math.abs(RX.X * HX) + math.abs(UY.X * HY) + math.abs(LZ.X * HZ)) * DepthScale
-										local Ey = (math.abs(RX.Y * HX) + math.abs(UY.Y * HY) + math.abs(LZ.Y * HZ)) * DepthScale
-										local PMinX, PMaxX = sp.X - Ex, sp.X + Ex
-										local PMinY, PMaxY = sp.Y - Ey, sp.Y + Ey
-										if PMinX < minV.X then minV = Vector2.new(PMinX, minV.Y) end
-										if PMaxX > maxV.X then maxV = Vector2.new(PMaxX, maxV.Y) end
-										if PMinY < minV.Y then minV = Vector2.new(minV.X, PMinY) end
-										if PMaxY > maxV.Y then maxV = Vector2.new(maxV.X, PMaxY) end
+									local cf = part.CFrame
+									local sz = part.Size
+									local HX, HY, HZ = sz.X * 0.5, sz.Y * 0.5, sz.Z * 0.5
+									
+									-- Project all 8 corners of the part's bounding box
+									for _, offset in ipairs({
+										Vector3.new(HX, HY, HZ), Vector3.new(HX, HY, -HZ),
+										Vector3.new(HX, -HY, HZ), Vector3.new(HX, -HY, -HZ),
+										Vector3.new(-HX, HY, HZ), Vector3.new(-HX, HY, -HZ),
+										Vector3.new(-HX, -HY, HZ), Vector3.new(-HX, -HY, -HZ)
+									}) do
+										local cornerPos = cf * offset
+										local relCorner = cornerPos - camPos
+										local cz = relCorner:Dot(lookDir)
+										if cz > 0 then
+											local cx = relCorner:Dot(rightVec)
+											local cy = relCorner:Dot(upVec)
+											local screenX = (cx / cz) * focalLength + (vpSize.X / 2)
+											local screenY = -(cy / cz) * focalLength + (vpSize.Y / 2)
+											if screenX < minV.X then minV = Vector2.new(screenX, minV.Y) end
+											if screenX > maxV.X then maxV = Vector2.new(screenX, maxV.Y) end
+											if screenY < minV.Y then minV = Vector2.new(minV.X, screenY) end
+											if screenY > maxV.Y then maxV = Vector2.new(maxV.X, screenY) end
+										end
 									end
 								end
 							end
+							
 							local padding = 3
 							local sizeX = math.max(1, math.floor((maxV.X - minV.X) + padding * 2))
 							local sizeY = math.max(1, math.floor((maxV.Y - minV.Y) + padding * 2))
 							cfg.objects["holder"].Size = UDim2.fromOffset(sizeX, sizeY)
 							cfg.objects["holder"].Position = UDim2.fromOffset(math.floor(minV.X - padding), math.floor(minV.Y - padding))
 						else
+							cfg.objects["holder"].Size = UDim2.fromOffset(110, 150)
 							local vpX = items.viewportframe.AbsoluteSize.X
 							local vpY = items.viewportframe.AbsoluteSize.Y
-							if vpX <= 0 then vpX = 110 end
-							if vpY <= 0 then vpY = 150 end
-							cfg.objects["holder"].Size = UDim2.fromOffset(110, 150)
 							cfg.objects["holder"].Position = UDim2.fromOffset(math.floor((vpX - 110) / 2), math.floor((vpY - 150) / 2))
+						end
+						
+						-- Team Color application for ESP Preview
+						local teamCol = lp.Team and lp.Team.TeamColor and lp.Team.TeamColor.Color or rgb(255, 255, 255)
+						local teamElems = flags["ESP_TEAM_COLOR_ELEMENTS"] or {}
+						if type(teamElems) == "string" then teamElems = {teamElems} end
+						local function hasElem(elem)
+							for _, v in ipairs(teamElems) do if v == elem then return true end end
+							return false
+						end
+						if hasElem("Name") then objects["name"].TextColor3 = teamCol end
+						if hasElem("Distance") then objects["distance"].TextColor3 = teamCol end
+						if hasElem("Tool") then objects["weapon"].TextColor3 = teamCol end
+						if hasElem("Box") then objects["box_color"].Color = teamCol end
+						if hasElem("Box Fill") then
+							local grad = objects["box_fill"]:FindFirstChildOfClass("UIGradient")
+							if grad then grad.Color = ColorSequence.new(teamCol) end
+						end
+						if hasElem("Mesh Chams") or hasElem("Glow") then
+							local st = get_settings and get_settings()
+							if st and st.ChamsSettings then
+								if st.ChamsSettings.MeshChamsColor then st.ChamsSettings.MeshChamsColor = teamCol end
+								if st.ChamsSettings.GlowColor then st.ChamsSettings.GlowColor = teamCol end
+							end
 						end
 					end
 				end)
