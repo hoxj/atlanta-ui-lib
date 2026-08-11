@@ -2316,10 +2316,10 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Move model up on Y axis, no camera angles
-						local charPos = Vector3.new(0, 5, -6)
+						-- Character is at Y=2, Camera looks at Y=0. This moves the model up on the screen without angling the camera.
+						local charPos = Vector3.new(0, 2, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 5, 0), charPos)
+						items.camera.CFrame = cfr(Vector3.new(0, 0, 0), Vector3.new(0, 0, -6))
 						
 						if flag_bool("esp_dynamic_box") then
 							-- Exact dynamic box math from main script
