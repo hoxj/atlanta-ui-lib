@@ -2316,12 +2316,13 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Character at Y=2, Camera at Y=4 looking down at it. This makes the legs visible.
-						local charPos = Vector3.new(0, 2, -7)
+						-- Move model up on Y axis, no camera angles
+						local charPos = Vector3.new(0, 5, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 4, 0), charPos)
+						items.camera.CFrame = cfr(Vector3.new(0, 5, 0), charPos)
 						
 						if flag_bool("esp_dynamic_box") then
+							-- Exact dynamic box math from main script
 							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
 							if FocalLength ~= FocalLength or FocalLength == math.huge then FocalLength = 100 end
 							
