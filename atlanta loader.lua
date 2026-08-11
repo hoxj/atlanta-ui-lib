@@ -1338,7 +1338,8 @@ local function get_config_name_from_path(file)
 					BorderColor3 = rgb(0, 0, 0),
 					AnchorPoint = vec2(0.5, 0),
 					Position = dim2(0.5, 0, 0, 20),
-					Size = dim2(0, 157, 0, 39),
+					Size = dim2(0, 0, 0, 39),
+					AutomaticSize = Enum.AutomaticSize.X,
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline
 				}); 
@@ -1606,7 +1607,7 @@ local function get_config_name_from_path(file)
 
 			-- main window
 				local main_window = library:panel({
-					name = properties and properties.name or "Atlanta | ", 
+					name = "Beyond.Hook PL | " .. os.date("%b %d %Y"), 
 					size = dim2(0, 604, 0, 628),
 					position = dim2(0, (camera.ViewportSize.X / 2) - 302 - 96, 0, (camera.ViewportSize.Y / 2) - 421 - 12),
 					image = "rbxassetid://98823308062942",
@@ -1712,23 +1713,56 @@ local function get_config_name_from_path(file)
 				})
 
 local watermark = library:watermark({
-    default = "Beyond.hook | Prison life V1 | Loading..."
+    default = "Beyond.Hook v1.5.3.2"
 })  
 
 task.spawn(function()
-    while task.wait(1) do 
-        -- Get FPS and Ping
+    while task.wait(0.5) do 
         local fps = math.floor(1 / game:GetService("RunService").Heartbeat:Wait())
         local ping = math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue())
         
-        
-        -- Get current user info
         local player = game:GetService("Players").LocalPlayer
         local username = player.Name
         local userId = player.UserId
         
-        -- Update watermark text
-        watermark.change_text("Beyond.hook | Private | Beta | Prison life V1 | FPS: " .. fps .. " | Ping: " .. ping .. "ms | " .. username .. " (" .. userId .. ")")
+        local executorName = "unknown"
+        local ok, ex = pcall(identifyexecutor)
+        if ok and ex then
+            executorName = string.lower(string.split(ex, " ")[1])
+        end
+        
+        local text = "Beyond.Hook v1.5.3.2"
+        local wmOpts = flags["wm_options"] or {}
+        if type(wmOpts) ~= "table" then wmOpts = {wmOpts} end
+        
+        local function has(opt)
+            for _, v in ipairs(wmOpts) do
+                if v == opt then return true end
+            end
+            return false
+        end
+        
+        if has("fps") then
+            text = text .. " | fps: " .. fps
+        end
+        if has("ping") then
+            text = text .. " | ping: " .. ping
+        end
+        if has("executor") then
+            text = text .. " | " .. executorName
+        end
+        if has("username") then
+            text = text .. " | " .. username
+        end
+        if has("userid") then
+            if has("username") then
+                text = text .. " (" .. userId .. ")"
+            else
+                text = text .. " | (" .. userId .. ")"
+            end
+        end
+        
+        watermark.change_text(text)
     end 
 end)
 
@@ -1790,9 +1824,10 @@ end)
 						library.keybind_list_frame.Position = dim2(0, x, 0, y)
 					end
 				end})
-				section:toggle({name = "Watermark", flag = "watermark", callback = function(bool)
+				section:toggle({name = "Watermark", flag = "watermark", default = true, callback = function(bool)
 					watermark.set_visible(bool)
 				end})
+				section:dropdown({name = "Watermark Options", flag = "wm_options", items = {"fps", "ping", "executor", "username", "userid"}, default = {"fps", "ping", "executor", "username", "userid"}, multi = true, callback = function(selected) end})
 				section:button_holder({})
 				section:button({name = "Copy JobId", callback = function()
 					setclipboard(game.JobId)
@@ -2221,30 +2256,20 @@ end)
 					lp.Character.Archivable = true
 					character = lp.Character:Clone()
 					if character:FindFirstChild("Animate") then character.Animate:Destroy() end
-					-- Clean up scripts so they don't run in the preview
 					for _, v in ipairs(character:GetDescendants()) do
 						if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript") then
 							v:Destroy()
+						elseif v:IsA("BasePart") then
+							v.Anchored = true
 						end
 					end
-					-- Anchor every part so the preview model never falls / moves
-					for _, part in ipairs(character:GetDescendants()) do
-						if part:IsA("BasePart") then
-							part.Anchored = true
-						end
-					end
-					-- Freeze the humanoid so it doesn't play animations or fall
-					local humanoid = character:FindFirstChildOfClass("Humanoid")
-					if humanoid then
-						humanoid.AutoRotate = false
-						humanoid.WalkSpeed = 0
-						humanoid.JumpPower = 0
-						pcall(function()
-							humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-							humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingNoCollision, false)
-							humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
-							humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-						end)
+					local hum = character:FindFirstChildOfClass("Humanoid")
+					if hum then
+						hum.AutoRotate = false
+						hum.WalkSpeed = 0
+						hum.JumpPower = 0
+						pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Physics, true) end)
+						pcall(function() hum:ChangeState(Enum.HumanoidStateType.Physics) end)
 					end
 					if not character.PrimaryPart then
 						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
@@ -2265,7 +2290,7 @@ end)
 				items.viewportframe = library:create( "ViewportFrame" , {
 					Parent = self.holder;
 					BackgroundTransparency = 1;
-					Size = dim2(1, 0, 0, 220);
+					Size = dim2(1, 0, 0, 260); -- Increased to prevent weapon/distance cut-off
 					BorderColor3 = rgb(0, 0, 0);
 					ZIndex = 1;
 					Position = dim2(0, 0, 0, 10);
@@ -2315,12 +2340,12 @@ end)
 										local DepthScale = FocalLength / sp.Z
 										local Ex = (math.abs(RX.X * HX) + math.abs(UY.X * HY) + math.abs(LZ.X * HZ)) * DepthScale
 										local Ey = (math.abs(RX.Y * HX) + math.abs(UY.Y * HY) + math.abs(LZ.Y * HZ)) * DepthScale
+										
 										local minX = sp.X - Ex
 										local maxX = sp.X + Ex
 										local minY = sp.Y - Ey
 										local maxY = sp.Y + Ey
 										
-										-- Vector2 components are read-only, must create new Vector2s
 										if minX < minV.X then minV = Vector2.new(minX, minV.Y) end
 										if maxX > maxV.X then maxV = Vector2.new(maxX, maxV.Y) end
 										if minY < minV.Y then minV = Vector2.new(minV.X, minY) end
@@ -2329,10 +2354,10 @@ end)
 								end
 							end
 							local sizeX = maxV.X - minV.X
-							local sizeY = maxV.Y - minV.Y + 10
-							cfg.objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 50, 200), math.clamp(sizeY, 80, 260))
+							local sizeY = maxV.Y - minV.Y
+							cfg.objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 50, 200), math.clamp(sizeY, 80, 220))
 						else
-							cfg.objects["holder"].Size = UDim2.fromOffset(135, 200)
+							cfg.objects["holder"].Size = UDim2.fromOffset(135, 190)
 						end
 					end
 				end)
@@ -2343,7 +2368,7 @@ end)
 					Parent = items.viewportframe;
 					Name = "\0";
 					BackgroundTransparency = 1;
-					Position = dim2(0.5, 0, 0.5, 10);
+					Position = dim2(0.5, 0, 0.5, -10); -- Shifted up to leave room for text below
 					BorderColor3 = rgb(0, 0, 0);
 					Size = dim2(0, 135, 0, 190);
 					BorderSizePixel = 0;
@@ -2406,44 +2431,40 @@ end)
 					Parent = objects[ "outline" ];
 					LineJoinMode = Enum.LineJoinMode.Miter
 				});  
-				
+
+				-- Exact Corner Boxes from Main Script
 				objects[ "corners" ] = library:create( "Frame" , {
-					Visible = true;
-					BorderColor3 = rgb(0, 0, 0);
 					Parent = objects[ "holder" ];
-					BackgroundTransparency = 1;
-					Position = dim2(0, -1, 0, 2);
 					Name = "\0";
+					BackgroundTransparency = 1;
+					Position = dim2(0, 0, 0, 0);
 					Size = dim2(1, 0, 1, 0);
 					BorderSizePixel = 0;
 					BackgroundColor3 = rgb(255, 255, 255)
 				});
 
-				local cornerNames = { "1", "2", "3", "4", "5", "6", "7", "8" }
-				for _, cornerName in ipairs(cornerNames) do
-					local baseProps = {
-						Parent = objects[ "corners" ];
-						Name = "line";
-						BorderColor3 = rgb(0, 0, 0);
-						BorderSizePixel = 0;
-						BackgroundColor3 = flag_color("esp_box_color");
-					}
-
-					if cornerName == "1" then baseProps.Position = dim2(0, 0, 0, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
-					elseif cornerName == "2" then baseProps.Position = dim2(0, 0, 0, 1); baseProps.Size = dim2(0, 3, 0.25, 0)
-					elseif cornerName == "3" then baseProps.AnchorPoint = vec2(1, 0); baseProps.Position = dim2(1, 0, 0, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
-					elseif cornerName == "4" then baseProps.AnchorPoint = vec2(1, 0); baseProps.Position = dim2(1, 0, 0, 1); baseProps.Size = dim2(0, 3, 0.25, 0)
-					elseif cornerName == "5" then baseProps.AnchorPoint = vec2(0, 1); baseProps.Position = dim2(0, -1, 1, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
-					elseif cornerName == "6" then baseProps.Rotation = 180; baseProps.AnchorPoint = vec2(0, 1); baseProps.Position = dim2(0, 0, 1, -4); baseProps.Size = dim2(0, 3, 0.25, 1)
-					elseif cornerName == "7" then baseProps.AnchorPoint = vec2(1, 1); baseProps.Position = dim2(1, -1, 1, -2); baseProps.Size = dim2(0.4, 0, 0, 3)
-					elseif cornerName == "8" then baseProps.Rotation = 180; baseProps.AnchorPoint = vec2(1, 1); baseProps.Position = dim2(1, 0, 1, -4); baseProps.Size = dim2(0, 3, 0.25, 1)
-					end
-
-					objects[cornerName] = library:create("Frame", baseProps)
+				local cornerNames = { "LeftTop", "LeftSide", "RightTop", "RightSide", "BottomLeft", "BottomDown", "BottomRightSide", "BottomRightDown" }
+				for _, name in ipairs(cornerNames) do
+					local fOutline = library:create("Frame", {
+						Parent = objects["corners"],
+						Name = name .. "_Outline",
+						BackgroundColor3 = rgb(0, 0, 0),
+						BorderSizePixel = 0,
+						ZIndex = 1,
+						Visible = false
+					})
+					local fMain = library:create("Frame", {
+						Parent = objects["corners"],
+						Name = name .. "_Main",
+						BackgroundColor3 = flag_color("esp_box_color"),
+						BorderSizePixel = 0,
+						ZIndex = 2,
+						Visible = false
+					})
+					objects[name] = {Main = fMain, Outline = fOutline}
 				end
 				
 				objects[ "healthbar_holder" ] = library:create( "Frame" , {
-					AnchorPoint = vec2(0, 0);
 					Parent = objects[ "holder" ];
 					Name = "HealthBarOutline";
 					BorderColor3 = rgb(0, 0, 0);
@@ -2562,7 +2583,6 @@ end)
 				});
 
 				objects[ "ammobar_holder" ] = library:create( "Frame" , {
-					AnchorPoint = vec2(0, 0);
 					Parent = objects[ "holder" ];
 					Name = "AmmoBarOutline";
 					BorderColor3 = rgb(0, 0, 0);
@@ -2604,6 +2624,38 @@ end)
 				});
 			end 
 
+			local function update_corners()
+				local w = objects["holder"].Size.X.Offset
+				local h = objects["holder"].Size.Y.Offset
+				local cornerLen = math.floor(w * 0.3)
+				local t = 1
+				
+				local function setHoriz(seg, x, y, len)
+					seg.Main.Position = UDim2.fromOffset(x, y)
+					seg.Main.Size = UDim2.fromOffset(len, t)
+					seg.Outline.Position = UDim2.fromOffset(x - 1, y - 1)
+					seg.Outline.Size = UDim2.fromOffset(len + 2, t + 2)
+				end
+				local function setVert(seg, x, y, len)
+					seg.Main.Position = UDim2.fromOffset(x, y)
+					seg.Main.Size = UDim2.fromOffset(t, len)
+					seg.Outline.Position = UDim2.fromOffset(x - 1, y - 1)
+					seg.Outline.Size = UDim2.fromOffset(t + 2, len + 2)
+				end
+
+				setHoriz(objects["LeftTop"], 0, 0, cornerLen)
+				setVert(objects["LeftSide"], 0, 0, cornerLen)
+
+				setHoriz(objects["RightTop"], w - cornerLen, 0, cornerLen)
+				setVert(objects["RightSide"], w - t, 0, cornerLen)
+
+				setHoriz(objects["BottomLeft"], 0, h - t, cornerLen)
+				setVert(objects["BottomDown"], 0, h - cornerLen, cornerLen)
+
+				setHoriz(objects["BottomRightDown"], w - cornerLen, h - t, cornerLen)
+				setVert(objects["BottomRightSide"], w - t, h - cornerLen, cornerLen)
+			end
+
 			cfg.change_health = function()
 				local st = get_settings and get_settings()
 				local smooth = (st and st.HealthSmooth) or 0.05
@@ -2611,7 +2663,10 @@ end)
 				local textSize = (st and st.TextSize) or 14
 				local lineH = math.max(12, textSize - 2) + 4
 				
-				local fullH = 190
+				-- Dynamic box height syncing
+				local fullH = objects["holder"].Size.Y.Offset - 2
+				if fullH < 50 then fullH = 188 end
+				
 				if flag_bool("esp_healthbar") and objects[ "healthbar_holder" ].Parent == objects[ "holder" ] then
 					local target = 0.5 + 0.5 * math.sin(tick() * 2)
 					cfg._health_prev = (cfg._health_prev or target) + (target - (cfg._health_prev or target)) * math.min(smooth * 30, 1)
@@ -2684,7 +2739,7 @@ end)
 				local currentY = 3
 				
 				if flag_bool("esp_ammo_bar") and objects[ "ammobar_holder" ].Parent == objects[ "holder" ] then
-					local boxWidth = 135
+					local boxWidth = objects["holder"].Size.X.Offset
 					local barWidth = math.max(math.floor(boxWidth * ammoRatio), 1)
 					
 					objects[ "ammobar_holder" ].Size = UDim2.fromOffset(barWidth + 2, barW + 2)
@@ -2721,6 +2776,8 @@ end)
 				if flag_bool("esp_weapon") and objects[ "weapon" ].Parent == objects[ "holder" ] then
 					objects[ "weapon" ].Position = dim2(0.5, 0, 1, currentY)
 				end
+
+				update_corners()
 			end
 
 			local function safe_set_parent(inst, new_parent)
@@ -2807,27 +2864,34 @@ end)
 				end
 
 				if flag_bool("esp_box") then
-					if flags["box_mode"] == "Corner Boxes" then
+					if flags["esp_box_mode"] == "Corner Boxes" then
 						safe_set_parent(objects["box_handler"], library.cache)
 						safe_set_parent(objects["box_outline"], library.cache)
-						safe_set_parent(objects["corners"], objects["holder"])
+						for _, name in ipairs({"LeftTop", "LeftSide", "RightTop", "RightSide", "BottomLeft", "BottomDown", "BottomRightSide", "BottomRightDown"}) do
+							objects[name].Main.Visible = true
+							objects[name].Outline.Visible = true
+						end
 					else
 						safe_set_parent(objects["box_handler"], objects["holder"])
 						safe_set_parent(objects["box_outline"], objects["holder"])
-						safe_set_parent(objects["corners"], library.cache)
+						for _, name in ipairs({"LeftTop", "LeftSide", "RightTop", "RightSide", "BottomLeft", "BottomDown", "BottomRightSide", "BottomRightDown"}) do
+							objects[name].Main.Visible = false
+							objects[name].Outline.Visible = false
+						end
 					end
 				else
 					safe_set_parent(objects["box_handler"], library.cache)
 					safe_set_parent(objects["box_outline"], library.cache)
-					safe_set_parent(objects["corners"], library.cache)
+					for _, name in ipairs({"LeftTop", "LeftSide", "RightTop", "RightSide", "BottomLeft", "BottomDown", "BottomRightSide", "BottomRightDown"}) do
+						objects[name].Main.Visible = false
+						objects[name].Outline.Visible = false
+					end
 				end
 
 				local boxCol = flag_color("esp_box_color")
 				objects["box_color"].Color = boxCol
-				for _, corner in objects["corners"]:GetChildren() do
-					if corner.Name == "line" then
-						pcall(function() corner.BackgroundColor3 = boxCol end)
-					end
+				for _, name in ipairs({"LeftTop", "LeftSide", "RightTop", "RightSide", "BottomLeft", "BottomDown", "BottomRightSide", "BottomRightDown"}) do
+					objects[name].Main.BackgroundColor3 = boxCol
 				end
 
 				objects["box_fill"].Visible = flag_bool("esp_box_fill")
