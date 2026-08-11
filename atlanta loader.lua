@@ -2316,10 +2316,10 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Move character up to 5 so legs aren't cut off, and move camera closer (-6) to make it bigger
-						local charPos = Vector3.new(0, 5, -6)
+						-- Character at Y=2, Camera at Y=4 looking down at it. This makes the legs visible.
+						local charPos = Vector3.new(0, 2, -7)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 5, 0), charPos)
+						items.camera.CFrame = cfr(Vector3.new(0, 4, 0), charPos)
 						
 						if flag_bool("esp_dynamic_box") then
 							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
