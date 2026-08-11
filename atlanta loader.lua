@@ -2262,11 +2262,7 @@ end)
 					end
 					local hum = character:FindFirstChildOfClass("Humanoid")
 					if hum then
-						hum.AutoRotate = false
-						hum.WalkSpeed = 0
-						hum.JumpPower = 0
-						pcall(function() hum:SetStateEnabled(Enum.HumanoidStateType.Physics, true) end)
-						pcall(function() hum:ChangeState(Enum.HumanoidStateType.Physics) end)
+						hum:Destroy() -- Completely destroy the humanoid so it can never move or animate
 					end
 					if not character.PrimaryPart then
 						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
@@ -2326,40 +2322,31 @@ end)
 						items.camera.CFrame = cfr(Vector3.new(0, 5, 0), charPos)
 						
 						if flag_bool("esp_dynamic_box") then
-							local camCF = items.camera.CFrame
-							local camPos = camCF.Position
-							local lookDir = camCF.LookVector
-							local rightVec = camCF.RightVector
-							local upVec = camCF.UpVector
-							local vpSize = items.viewportframe.AbsoluteSize
-							local focalLength = (vpSize.Y / 2) / math.tan(math.rad(items.camera.FieldOfView / 2))
+							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
+							if FocalLength ~= FocalLength or FocalLength == math.huge then FocalLength = 100 end
 							
 							local minV = Vector2.new(math.huge, math.huge)
 							local maxV = Vector2.new(-math.huge, -math.huge)
 							for _, part in ipairs(character:GetChildren()) do
 								if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-									local cf = part.CFrame
-									local sz = part.Size
-									local HX, HY, HZ = sz.X * 0.5, sz.Y * 0.5, sz.Z * 0.5
-									for _, offset in ipairs({
-										Vector3.new(HX, HY, HZ), Vector3.new(HX, HY, -HZ),
-										Vector3.new(HX, -HY, HZ), Vector3.new(HX, -HY, -HZ),
-										Vector3.new(-HX, HY, HZ), Vector3.new(-HX, HY, -HZ),
-										Vector3.new(-HX, -HY, HZ), Vector3.new(-HX, -HY, -HZ)
-									}) do
-										local cornerPos = cf * offset
-										local relCorner = cornerPos - camPos
-										local cz = relCorner:Dot(lookDir)
-										if cz > 0 then
-											local cx = relCorner:Dot(rightVec)
-											local cy = relCorner:Dot(upVec)
-											local screenX = (cx / cz) * focalLength + (vpSize.X / 2)
-											local screenY = -(cy / cz) * focalLength + (vpSize.Y / 2)
-											if screenX < minV.X then minV = Vector2.new(screenX, minV.Y) end
-											if screenX > maxV.X then maxV = Vector2.new(screenX, maxV.Y) end
-											if screenY < minV.Y then minV = Vector2.new(minV.X, screenY) end
-											if screenY > maxV.Y then maxV = Vector2.new(maxV.X, screenY) end
-										end
+									local sp, onScreen = items.camera:WorldToViewportPoint(part.Position)
+									if onScreen and sp.Z > 0 then
+										local cf = part.CFrame
+										local sz = part.Size
+										local HX, HY, HZ = sz.X * 0.5, sz.Y * 0.5, sz.Z * 0.5
+										local RX, UY, LZ = cf.RightVector, cf.UpVector, cf.LookVector
+										local DepthScale = FocalLength / sp.Z
+										
+										local Ex = (math.abs(RX.X * HX) + math.abs(UY.X * HY) + math.abs(LZ.X * HZ)) * DepthScale
+										local Ey = (math.abs(RX.Y * HX) + math.abs(UY.Y * HY) + math.abs(LZ.Y * HZ)) * DepthScale
+										
+										local PMinX, PMaxX = sp.X - Ex, sp.X + Ex
+										local PMinY, PMaxY = sp.Y - Ey, sp.Y + Ey
+										
+										if PMinX < minV.X then minV = Vector2.new(PMinX, minV.Y) end
+										if PMaxX > maxV.X then maxV = Vector2.new(PMaxX, maxV.Y) end
+										if PMinY < minV.Y then minV = Vector2.new(minV.X, PMinY) end
+										if PMaxY > maxV.Y then maxV = Vector2.new(maxV.X, PMaxY) end
 									end
 								end
 							end
