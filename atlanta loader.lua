@@ -2322,10 +2322,18 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1, -9)) * angle(0, math.rad(cfg.rotation), 0)) -- Moved camera back to shrink character
+						-- Position character at 0,1,0 and camera to look at it
+						local charPos = Vector3.new(0, 1, 0)
+						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
+						items.camera.CFrame = cfr(Vector3.new(0, 2, 5), Vector3.new(0, 1, 0))
 						
 						if flag_bool("esp_dynamic_box") then
-							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
+							-- Exact math from main script
+							local vpY = items.viewportframe.AbsoluteSize.Y
+							if vpY == 0 then vpY = 180 end
+							local FocalLength = vpY / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
+							if FocalLength ~= FocalLength or FocalLength == math.huge then FocalLength = 100 end
+							
 							local minV = Vector2.new(math.huge, math.huge)
 							local maxV = Vector2.new(-math.huge, -math.huge)
 							for _, part in ipairs(character:GetChildren()) do
@@ -2339,22 +2347,19 @@ end)
 										local DepthScale = FocalLength / sp.Z
 										local Ex = (math.abs(RX.X * HX) + math.abs(UY.X * HY) + math.abs(LZ.X * HZ)) * DepthScale
 										local Ey = (math.abs(RX.Y * HX) + math.abs(UY.Y * HY) + math.abs(LZ.Y * HZ)) * DepthScale
-										
-										local minX = sp.X - Ex
-										local maxX = sp.X + Ex
-										local minY = sp.Y - Ey
-										local maxY = sp.Y + Ey
-										
-										if minX < minV.X then minV = Vector2.new(minX, minV.Y) end
-										if maxX > maxV.X then maxV = Vector2.new(maxX, maxV.Y) end
-										if minY < minV.Y then minV = Vector2.new(minV.X, minY) end
-										if maxY > maxV.Y then maxV = Vector2.new(maxV.X, maxY) end
+										local PMinX, PMaxX = sp.X - Ex, sp.X + Ex
+										local PMinY, PMaxY = sp.Y - Ey, sp.Y + Ey
+										if PMinX < minV.X then minV = Vector2.new(PMinX, minV.Y) end
+										if PMaxX > maxV.X then maxV = Vector2.new(PMaxX, maxV.Y) end
+										if PMinY < minV.Y then minV = Vector2.new(minV.X, PMinY) end
+										if PMaxY > maxV.Y then maxV = Vector2.new(maxV.X, PMaxY) end
 									end
 								end
 							end
-							local sizeX = maxV.X - minV.X
-							local sizeY = maxV.Y - minV.Y
-							cfg.objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 40, 120), math.clamp(sizeY, 60, 160))
+							local padding = 3
+							local sizeX = math.max(1, math.floor((maxV.X - minV.X) + padding * 2))
+							local sizeY = math.max(1, math.floor((maxV.Y - minV.Y) + padding * 2))
+							cfg.objects["holder"].Size = UDim2.fromOffset(sizeX, sizeY)
 						else
 							cfg.objects["holder"].Size = UDim2.fromOffset(135, 190)
 						end
