@@ -1338,8 +1338,7 @@ local function get_config_name_from_path(file)
 					BorderColor3 = rgb(0, 0, 0),
 					AnchorPoint = vec2(0.5, 0),
 					Position = dim2(0.5, 0, 0, 20),
-					Size = dim2(0, 0, 0, 39),
-					AutomaticSize = Enum.AutomaticSize.X,
+					Size = dim2(0, 157, 0, 39), -- Reverted to fixed size to prevent infinite line
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline
 				}); 
@@ -2290,7 +2289,7 @@ end)
 				items.viewportframe = library:create( "ViewportFrame" , {
 					Parent = self.holder;
 					BackgroundTransparency = 1;
-					Size = dim2(1, 0, 0, 260); -- Increased to prevent weapon/distance cut-off
+					Size = dim2(1, 0, 0, 180); -- Reduced height to prevent scrolling
 					BorderColor3 = rgb(0, 0, 0);
 					ZIndex = 1;
 					Position = dim2(0, 0, 0, 10);
@@ -2323,7 +2322,7 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1.5, -6)) * angle(0, math.rad(cfg.rotation), 0))
+						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1, -9)) * angle(0, math.rad(cfg.rotation), 0)) -- Moved camera back to shrink character
 						
 						if flag_bool("esp_dynamic_box") then
 							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
@@ -2355,7 +2354,7 @@ end)
 							end
 							local sizeX = maxV.X - minV.X
 							local sizeY = maxV.Y - minV.Y
-							cfg.objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 50, 200), math.clamp(sizeY, 80, 220))
+							cfg.objects["holder"].Size = UDim2.fromOffset(math.clamp(sizeX, 40, 120), math.clamp(sizeY, 60, 160))
 						else
 							cfg.objects["holder"].Size = UDim2.fromOffset(135, 190)
 						end
@@ -2368,9 +2367,9 @@ end)
 					Parent = items.viewportframe;
 					Name = "\0";
 					BackgroundTransparency = 1;
-					Position = dim2(0.5, 0, 0.5, -10); -- Shifted up to leave room for text below
+					Position = dim2(0.5, 0, 0.5, 0);
 					BorderColor3 = rgb(0, 0, 0);
-					Size = dim2(0, 135, 0, 190);
+					Size = dim2(0, 100, 0, 140); -- Reduced base size for ESP elements
 					BorderSizePixel = 0;
 					AnchorPoint = vec2(0.5, 0.5);
 					BackgroundColor3 = rgb(255, 255, 255)
