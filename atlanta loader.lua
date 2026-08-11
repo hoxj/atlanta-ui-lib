@@ -2061,7 +2061,7 @@ end)
 				end
 				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight", "Mesh Chams", "Glow"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
 				section:button_holder({})
-				section:button({name = "Target", callback = function()
+				section:button({name = "target", callback = function()
 					if not library.selected_player then return end
 					if library.current_target == library.selected_player then
 						local playerName = library.current_target
@@ -2080,7 +2080,7 @@ end)
 						library.prioritize("Priority")
 					end
 				end})
-				section:button({name = "View", callback = function()
+				section:button({name = "view", callback = function()
 					if not library.selected_player then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if library.viewing_player == library.selected_player then
@@ -2107,7 +2107,7 @@ end)
 						end)
 					end
 				end})
-				section:button({name = "TP", callback = function()
+				section:button({name = "tp", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if not p or not p.Character then return end
@@ -2320,10 +2320,10 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Move character up to 3 so legs aren't cut off, and move camera to match
-						local charPos = Vector3.new(0, 3, -7)
+						-- Move character up to 4 so legs aren't cut off, and move camera to match
+						local charPos = Vector3.new(0, 4, -8)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 3, 0), charPos)
+						items.camera.CFrame = cfr(Vector3.new(0, 4, 0), charPos)
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -6168,7 +6168,7 @@ end)
 			local text = library:create("TextLabel", {
 				Parent = contrast,
 				Name = "",
-				TextWrapped = true,
+				TextWrapped = false, -- Prevents text sliding when button is narrow
 				ZIndex = 2;
 				TextColor3 = themes.preset.text,
 				BorderColor3 = rgb(0, 0, 0),
