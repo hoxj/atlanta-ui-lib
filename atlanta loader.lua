@@ -1960,21 +1960,6 @@ end)
 					end})
 			-- 
 					
-			-- esp preview
-				local holder = library:panel({
-					name = "ESP Preview", 
-					anchor_point = vec2(0, 0),
-					size = dim2(0, 300, 0, 360),
-					position = dim2(0, style.items.main_holder.AbsolutePosition.X, 0, style.items.main_holder.AbsolutePosition.Y + style.items.main_holder.AbsoluteSize.Y + 2),
-					image = "rbxassetid://77684377836328",
-				})  
-				
-				local items = holder.items
-				
-				local column = setmetatable(items, library):column() 
-				window.esp_section = column:section({name = "Main"})
-			--  
-
 			-- playerlist 
 				local holder = library:panel({
 					name = "Playerlist", 
@@ -2242,6 +2227,25 @@ end)
 							v:Destroy()
 						end
 					end
+					-- Anchor every part so the preview model never falls / moves
+					for _, part in ipairs(character:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.Anchored = true
+						end
+					end
+					-- Freeze the humanoid so it doesn't play animations or fall
+					local humanoid = character:FindFirstChildOfClass("Humanoid")
+					if humanoid then
+						humanoid.AutoRotate = false
+						humanoid.WalkSpeed = 0
+						humanoid.JumpPower = 0
+						pcall(function()
+							humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+							humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingNoCollision, false)
+							humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
+							humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+						end)
+					end
 					if not character.PrimaryPart then
 						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 					end
@@ -2261,7 +2265,7 @@ end)
 				items.viewportframe = library:create( "ViewportFrame" , {
 					Parent = self.holder;
 					BackgroundTransparency = 1;
-					Size = dim2(1, 0, 0, 240);
+					Size = dim2(1, 0, 0, 220);
 					BorderColor3 = rgb(0, 0, 0);
 					ZIndex = 1;
 					Position = dim2(0, 0, 0, 10);
@@ -2294,7 +2298,7 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 0, -6)) * angle(0, math.rad(cfg.rotation), 0))
+						character:SetPrimaryPartCFrame(cfr(Vector3.new(0, 1.5, -6)) * angle(0, math.rad(cfg.rotation), 0))
 						
 						if flag_bool("esp_dynamic_box") then
 							local FocalLength = items.viewportframe.AbsoluteSize.Y / (2 * math.tan(math.rad(items.camera.FieldOfView) * 0.5))
