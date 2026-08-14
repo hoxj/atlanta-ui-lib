@@ -5523,25 +5523,41 @@ end)
 				local selected = {}
 				local is_table = type(value) == "table"
 
+				-- Ensure multi_items is a table
+				if cfg.multi and type(cfg.multi_items) ~= "table" then
+					cfg.multi_items = {}
+				end
+
+				-- If we are setting a multi-select value directly, sync multi_items
+				if cfg.multi and is_table then
+					cfg.multi_items = value
+				end
+
 				for _,v in next, cfg.option_instances do 
 					if v.Text == value or (is_table and find(value, v.Text)) then 
 						insert(selected, v.Text)
-						cfg.multi_items = selected
 						v.TextColor3 = themes.preset.accent
 					else 
 						v.TextColor3 = themes.preset.text
 					end
 				end
 
-				text.Text = is_table and concat(selected, ", ") or selected[1] or (type(value) == "string" and value or "nun")
-				
-				-- Only update the flag if we actually found matches, 
-				-- BUT if we didn't find matches, keep the raw value so refresh_options can apply it later!
 				if #selected > 0 then
+					text.Text = is_table and concat(selected, ", ") or selected[1]
 					flags[cfg.flag] = is_table and selected or selected[1]
+					if cfg.multi then cfg.multi_items = selected end
 				else
+					-- If no instances matched, keep the raw value so refresh_options can apply it later
+					if is_table and #value > 0 then
+						text.Text = concat(value, ", ")
+					elseif type(value) == "string" then
+						text.Text = value
+					else
+						text.Text = "nun"
+					end
 					flags[cfg.flag] = value
 				end
+				
 				cfg.callback(flags[cfg.flag]) 
 			end
 			
