@@ -5521,7 +5521,6 @@ end)
 
 			function cfg.set(value) 
 				local selected = {}
-
 				local is_table = type(value) == "table"
 
 				for _,v in next, cfg.option_instances do 
@@ -5534,8 +5533,15 @@ end)
 					end
 				end
 
-				text.Text = is_table and concat(selected, ", ") or selected[1] or "nun"
-				flags[cfg.flag] = is_table and selected or selected[1]
+				text.Text = is_table and concat(selected, ", ") or selected[1] or (type(value) == "string" and value or "nun")
+				
+				-- Only update the flag if we actually found matches, 
+				-- BUT if we didn't find matches, keep the raw value so refresh_options can apply it later!
+				if #selected > 0 then
+					flags[cfg.flag] = is_table and selected or selected[1]
+				else
+					flags[cfg.flag] = value
+				end
 				cfg.callback(flags[cfg.flag]) 
 			end
 			
@@ -5589,6 +5595,11 @@ end)
 							cfg.set(TextButton.Text)
 						end
 					end)
+				end
+				
+				-- Re-apply saved value after refreshing options!
+				if flags[cfg.flag] ~= nil then
+					cfg.set(flags[cfg.flag])
 				end
 			end
 
