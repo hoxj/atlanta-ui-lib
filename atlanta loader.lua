@@ -1,3 +1,4 @@
+
 -- variables
 	local uis = cloneref(game:GetService("UserInputService"))
 	local players = cloneref(game:GetService("Players"))
@@ -2234,10 +2235,15 @@ end)
 			local get_settings = props.get_settings or library.esp_preview_get_settings
 
 			local character = nil
-			pcall(function()
+			local function build_character()
+				if character then
+					character:Destroy()
+					character = nil
+				end
 				if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
 					lp.Character.Archivable = true
 					character = lp.Character:Clone()
+					lp.Character.Archivable = false
 					if character:FindFirstChild("Animate") then character.Animate:Destroy() end
 					for _, v in ipairs(character:GetDescendants()) do
 						if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript") then
@@ -2253,7 +2259,29 @@ end)
 					if not character.PrimaryPart then
 						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 					end
+					
+					if cfg.items.viewportframe and cfg.items.viewportframe.Parent then
+						character.Parent = cfg.items.viewportframe
+						if cfg.items.camera then
+							cfg.items.camera.CameraSubject = character
+						end
+						if cfg.preview_highlight then cfg.preview_highlight:Destroy() end
+						local hi = Instance.new("Highlight")
+						hi.Parent = character
+						hi.Adornee = character
+						hi.Enabled = false
+						hi.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+						cfg.preview_highlight = hi
+					end
 				end
+			end
+
+			build_character()
+
+			library:connection(lp.CharacterAppearanceLoaded, build_character)
+			library:connection(lp.CharacterAdded, function()
+				task.wait(1)
+				build_character()
 			end)
 
 			local function flag_color(key) 
