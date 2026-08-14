@@ -1,6 +1,3 @@
--- REASON: Dumbass customer put their library in a request and flexed his non existant security and ended up getting it leaked by himself... 😭
--- The code here is horrendous this is my 2nd library, the added on code was made to suit the old code however I should have just converted to a newer version of my code kind of an oopsie. 
-
 -- variables
 	local uis = cloneref(game:GetService("UserInputService"))
 	local players = cloneref(game:GetService("Players"))
@@ -67,7 +64,6 @@
 	local concat = table.concat
 -- 
 
--- library init
 	local library = {
 		directory = "Beyond.hook PL",
 		folders = {
@@ -272,8 +268,6 @@
 
 	local config_holder 
 -- 
--- library functions 
-	-- misc functions
 		function library:hoverify(hover, parent) 
 			local hover_instance = library:create("Frame", {
 				Parent = parent,
@@ -390,7 +384,7 @@
 					end 
 
 					if frame.Parent:IsA("ScreenGui") and frame.Parent.DisplayOrder ~= 999999 then 
-						library.display_orders += 1 -- shit code
+						library.display_orders += 1
 						frame.Parent.DisplayOrder = library.display_orders
 					end   
 				end
@@ -542,7 +536,6 @@ local function get_config_name_from_path(file)
 					end
 				end 
 			end
-			-- Re-apply all keybind flags so the keybind list shows correct keys and active states
 			for flag, val in next, flags do
 				if type(val) == "table" and val.key ~= nil then
 					local fn = library.config_flags[flag]
@@ -769,7 +762,6 @@ local function get_config_name_from_path(file)
 						items.sgui.Enabled = false;
 					end)
 
-					--library:apply_theme(main_holder, "outline", "BackgroundColor3") 
 					
 					items.window_inline = library:create("Frame", {
 						Parent = items.main_holder,
@@ -1287,7 +1279,7 @@ local function get_config_name_from_path(file)
 			local window = {opened = true}            
 			local opened = {}
 			local dock_outline;
-			local blur = nil -- Removed blur
+			local blur = nil
 
 			library.cache = library:create("ScreenGui", {
 				Enabled = false,
@@ -1330,7 +1322,6 @@ local function get_config_name_from_path(file)
 				end
 			end 
 
-			-- dock init
 				dock_outline = library:create("Frame", {
 					Parent = sgui,
 					Name = "",
@@ -1338,7 +1329,7 @@ local function get_config_name_from_path(file)
 					BorderColor3 = rgb(0, 0, 0),
 					AnchorPoint = vec2(0.5, 0),
 					Position = dim2(0.5, 0, 0, 20),
-					Size = dim2(0, 157, 0, 39), -- Reverted to fixed size to prevent infinite line
+					Size = dim2(0, 157, 0, 39),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline
 				}); 
@@ -1425,7 +1416,6 @@ local function get_config_name_from_path(file)
 				}) library:apply_theme(UIGradient, "contrast", "Color") 
 			-- 
 
-			-- keybind list (position controlled by Keybind List X/Y sliders; not draggable)
 				local outline = library:create("Frame", {
 					Parent = sgui,
 					Name = "",
@@ -1561,7 +1551,6 @@ local function get_config_name_from_path(file)
 					Position = dim2(0, 1, 0, 1),
 					BorderColor3 = rgb(0, 0, 0),
 					BorderSizePixel = 0,
-					--AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundColor3 = themes.preset.inline
 				})
 				library:apply_theme(inline, "inline", "BackgroundColor3")
@@ -1573,7 +1562,6 @@ local function get_config_name_from_path(file)
 					Position = dim2(0, 1, 0, 1),
 					BorderColor3 = rgb(0, 0, 0),
 					BorderSizePixel = 0,
-					--AutomaticSize = Enum.AutomaticSize.Y,
 					BackgroundColor3 = rgb(255, 255, 255)
 				})
 				library.keybind_list = background
@@ -1604,7 +1592,6 @@ local function get_config_name_from_path(file)
 				})
 			--  
 
-			-- main window
 				local main_window = library:panel({
 					name = "Beyond.Hook PL | " .. os.date("%b %d %Y"), 
 					size = dim2(0, 604, 0, 628),
@@ -1706,7 +1693,7 @@ local function get_config_name_from_path(file)
 				local style = library:panel({
 					name = "Style", 
 					anchor_point = vec2(0, 0),
-					size = dim2(0, 394, 0, 520), -- Increased height from 464 to 520
+					size = dim2(0, 394, 0, 520),
 					position = dim2(0, main_window.items.main_holder.AbsolutePosition.X + main_window.items.main_holder.AbsoluteSize.X + 2, 0, main_window.items.main_holder.AbsolutePosition.Y),
 					image = "rbxassetid://115194686863276",
 				})
@@ -1855,7 +1842,6 @@ end)
 				section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15, interval = 1})
 			-- 
 
-			-- cfg holder
 				local holder = library:panel({
 					name = "Configurations", 
 					size = dim2(0, 324, 0, 450),
@@ -2262,7 +2248,7 @@ end)
 					end
 					local hum = character:FindFirstChildOfClass("Humanoid")
 					if hum then
-						hum:Destroy() -- Completely destroy the humanoid so it can never move or animate
+						hum:Destroy()
 					end
 					if not character.PrimaryPart then
 						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
@@ -2283,7 +2269,7 @@ end)
 				items.viewportframe = library:create( "ViewportFrame" , {
 					Parent = self.holder;
 					BackgroundTransparency = 1;
-					Size = dim2(1, 0, 0, 180); -- Reduced height to prevent scrolling
+					Size = dim2(1, 0, 0, 180);
 					BorderColor3 = rgb(0, 0, 0);
 					ZIndex = 1;
 					Position = dim2(0, 0, 0, 10);
@@ -2316,13 +2302,11 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- Character is at Y=2, Camera looks at Y=0. This moves the model up on the screen without angling the camera.
 						local charPos = Vector3.new(0, 2, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
 						items.camera.CFrame = cfr(Vector3.new(0, 0, 0), Vector3.new(0, 0, -6))
 						
 						if flag_bool("esp_dynamic_box") then
-							-- Manual projection to avoid Roblox ViewportFrame coordinate bugs
 							local camCF = items.camera.CFrame
 							local camPos = camCF.Position
 							local lookDir = camCF.LookVector
@@ -2373,7 +2357,6 @@ end)
 							cfg.objects["holder"].Position = UDim2.fromOffset(math.floor((vpX - 110) / 2), math.floor((vpY - 150) / 2))
 						end
 						
-						-- Team Color application for ESP Preview (Safe checks to prevent errors)
 						local teamCol = lp.Team and lp.Team.TeamColor and lp.Team.TeamColor.Color or rgb(255, 255, 255)
 						local teamElems = flags["ESP_TEAM_COLOR_ELEMENTS"] or {}
 						if type(teamElems) == "string" then teamElems = {teamElems} end
@@ -2412,7 +2395,7 @@ end)
 					BackgroundTransparency = 1;
 					Position = dim2(0, 0, 0, 0);
 					BorderColor3 = rgb(0, 0, 0);
-					Size = dim2(0, 110, 0, 150); -- Reduced base size for ESP elements
+					Size = dim2(0, 110, 0, 150);
 					BorderSizePixel = 0;
 					AnchorPoint = vec2(0, 0);
 					BackgroundColor3 = rgb(255, 255, 255)
@@ -2474,7 +2457,6 @@ end)
 					LineJoinMode = Enum.LineJoinMode.Miter
 				});  
 
-				-- Exact Corner Boxes from Main Script
 				objects[ "corners" ] = library:create( "Frame" , {
 					Parent = objects[ "holder" ];
 					Name = "\0";
@@ -2705,8 +2687,6 @@ end)
 				local textSize = (st and st.TextSize) or 14
 				local lineH = math.max(12, textSize - 2) + 4
 				
-				-- Dynamic box height syncing
-				-- Use the full holder height to match the box stroke bounds exactly
 				local fullH = objects["holder"].Size.Y.Offset
 				if fullH < 50 then fullH = 150 end
 				
@@ -3011,7 +2991,7 @@ end)
 					Position = UDim2.new(0, base_x, 0, base_y + offset),
 					AutomaticSize = Enum.AutomaticSize.X,
 					BackgroundColor3 = themes.preset.outline,
-					AnchorPoint = Vector2.new(1, 0) -- Start off-screen
+					AnchorPoint = Vector2.new(1, 0)
 				})
 			
 				local watermark_inline = library:create("Frame", {
@@ -3149,7 +3129,6 @@ end)
 				enabled = false, 
 			}
 			
-			-- button instances
 				local tab_holder = library:create("TextButton", {
 					Parent = self.tab_holder,
 					FontFace = library.font,
@@ -3211,7 +3190,6 @@ end)
 				library:apply_theme(text, "accent", "TextColor3")
 			-- 
 
-			-- section instances 
 				local section_holder = library:create("Frame", {
 					Parent = library.section_holder,
 					BackgroundTransparency = 1,
@@ -3439,7 +3417,6 @@ end)
 					})
 				-- 
 
-				-- Element Handler
 					local ScrollingFrame = library:create("ScrollingFrame", {
 						Parent = __background,
 						Name = "",
@@ -4101,7 +4078,7 @@ end)
 			local cfg = {
 				name = options.name or "Color", 
 				flag = options.flag or tostring(2^789),
-				color = options.color or color(1, 1, 1), -- Default to white color if not provided
+				color = options.color or color(1, 1, 1),
 				alpha = options.alpha or 1,
 				callback = options.callback or function() end,
 				right_holder = self.right_holder,
@@ -4114,7 +4091,6 @@ end)
 			local h, s, v = cfg.color:ToHSV() 
 			local a = cfg.alpha 
 			
-			-- colorpicker button 
 				local colorpicker_button = library:create("TextButton", {
 					Parent = parent,
 					Name = "outline",
@@ -4160,7 +4136,6 @@ end)
 				})
 			-- 
 
-			-- colorpicker instances
 				local colorpicker_holder = library:create("Frame", {
 					Parent = sgui,
 					Name = "colorpicker",
@@ -4858,7 +4833,6 @@ end)
 				PaddingRight = dim(0, 2),
 			})
 			
-			-- mode selector
 				local keybind_selector = library:create("Frame", {
 					Parent = sgui,
 					Name = "",
@@ -5069,7 +5043,6 @@ end)
 				end
 
 
-				-- ok bro its 30 april2025.. what is this code from october 2024 💀💀
 				hold_button.MouseButton1Click:Connect(function()
 					cfg.set_mode("hold") 
 					cfg.set_visible(false)
@@ -5170,7 +5143,6 @@ end)
 
 			cfg.default = options.default or (cfg.multi and {cfg.items[1]}) or cfg.items[1] or nil
 
-			-- dropdown elements
 				local dropdown_REAL = library:create("TextLabel", {
 					Parent = parent,
 					FontFace = library.font,
@@ -5381,7 +5353,6 @@ end)
 				})     
 			--
 
-			-- dropdown holder
 				local dropdown_holder = library:create("Frame", {
 					Parent = sgui,
 					BorderColor3 = rgb(0, 0, 0),
@@ -5524,12 +5495,10 @@ end)
 				local selected = {}
 				local is_table = type(value) == "table"
 
-				-- Ensure multi_items is a table
 				if cfg.multi and type(cfg.multi_items) ~= "table" then
 					cfg.multi_items = {}
 				end
 
-				-- If we are setting a multi-select value directly, sync multi_items
 				if cfg.multi and is_table then
 					cfg.multi_items = value
 				end
@@ -5548,7 +5517,6 @@ end)
 					flags[cfg.flag] = is_table and selected or selected[1]
 					if cfg.multi then cfg.multi_items = selected end
 				else
-					-- If no instances matched, keep the raw value so refresh_options can apply it later
 					if is_table and #value > 0 then
 						text.Text = concat(value, ", ")
 					elseif type(value) == "string" then
@@ -5614,7 +5582,6 @@ end)
 					end)
 				end
 				
-				-- Re-apply saved value after refreshing options!
 				if flags[cfg.flag] ~= nil then
 					cfg.set(flags[cfg.flag])
 				end
@@ -5644,7 +5611,6 @@ end)
 
 				scale = options.size or 232, 
 				items = options.items or {"1", "2", "3"}, 
-				-- order = options.order or 1, 
 				placeholdertext = options.placeholder or options.placeholdertext or "search here...",
 				visible = options.visible or true,
 
@@ -6199,10 +6165,10 @@ end)
 				BorderColor3 = rgb(0, 0, 0),
 				Text = cfg.name,
 				Size = dim2(1, -4, 1, 0),
-				Position = dim2(0, 3, 0, -1), -- Changed from 4 to 3
+				Position = dim2(0, 3, 0, -1),
 				BackgroundTransparency = 1,
 				TextTruncate = Enum.TextTruncate.AtEnd,
-				TextXAlignment = Enum.TextXAlignment.Center, -- Forces text to be perfectly centered
+				TextXAlignment = Enum.TextXAlignment.Center,
 				BorderSizePixel = 0,
 				FontFace = library.font,
 				TextSize = 12,
@@ -6342,7 +6308,6 @@ end)
 				["Friendly"] = hex("23ff0a")
 			}
 
-			-- elements: player list at top first
 				local playerlist_holder = library:create("TextLabel", {
 					Parent = self.holder,
 					Name = "",
@@ -6490,7 +6455,6 @@ end)
 				local key = playerObj.Team.Name:lower():gsub("%s+", "")
 				return team_colors[key] or themes.preset.text
 			end
-			-- Sort order: Guards first (0), then Inmates (1), then Criminals (2), then others (3)
 			local function get_team_sort_order(playerObj)
 				if not playerObj or not playerObj.Team or not playerObj.Team.Name then return 3 end
 				local key = playerObj.Team.Name:lower():gsub("%s+", "")
@@ -6559,30 +6523,7 @@ end)
 					BackgroundColor3 = rgb(255, 255, 255)
 				}) 
 								
-				-- local TextLabel = library:create("TextLabel", {
-				--     Parent = TextButton,
-				--     Name = "",
-				--     FontFace = library.font,
-				--     TextColor3 = themes.preset.text,
-				--     BorderColor3 = rgb(0, 0, 0),
-				--     Text = "None",
-				--     BackgroundTransparency = 1,
-				--     TextXAlignment = Enum.TextXAlignment.Left,
-				--     BorderSizePixel = 0,
-				--     AutomaticSize = Enum.AutomaticSize.Y,
-				--     TextSize = 12,
-				--     BackgroundColor3 = rgb(255, 255, 255)
-				-- })
 								
-				-- local Frame = library:create("Frame", {
-				--     Parent = TextLabel,
-				--     Name = "",
-				--     Position = dim2(0, -10, 0, 0),
-				--     BorderColor3 = rgb(0, 0, 0),
-				--     Size = dim2(0, 1, 0, 12),
-				--     BorderSizePixel = 0,
-				--     BackgroundColor3 = themes.preset.outline
-				-- }) library:apply_theme(main_holder, "outline", "BackgroundColor3") 
 				
 				local priority_text = library:create("TextLabel", {
 					Parent = TextButton,
@@ -6656,7 +6597,6 @@ end)
 						line.LayoutOrder = newLayoutOrder + 0.5
 					end)
 				end
-				-- library.selected_player = players[tostring(player)]
 				
 				TextButton.MouseButton1Click:Connect(function()
 					local oldSelected = library.selected_player
@@ -6673,7 +6613,6 @@ end)
 
 					library.selected_player = player_name.Text
 					
-					-- Don't update the dropdown if selecting the local player
 					if path.priority_text.Text ~= "LocalPlayer" then
 						library.config_flags["PLAYERLIST_DROPDOWN"](path.priority_text.Text)
 					end
@@ -6764,7 +6703,6 @@ end)
 				insert(library.playerlist_data, player_object)
 			end 
 
-			-- Select local player by default on execute
 			task.spawn(function()
 				task.wait()
 				if library.playerlist_data[lp.Name] then
@@ -6918,7 +6856,7 @@ end)
 			})
 			cfg.actions_holder = actions_holder
 			cfg.patterns = patterns
-			cfg.refresh_player_coloars = function()
+			cfg.refresh_player_colors = function()
 				for name, path in pairs(library.playerlist_data) do
 					if typeof(path) == "table" and path.player_name and selected_button ~= path.player_name then
 						path.player_name.TextColor3 = get_display_color(path)
