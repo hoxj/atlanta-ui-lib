@@ -1706,7 +1706,7 @@ local function get_config_name_from_path(file)
 				local style = library:panel({
 					name = "Style", 
 					anchor_point = vec2(0, 0),
-					size = dim2(0, 394, 0, 464),
+					size = dim2(0, 394, 0, 520), -- Increased height from 464 to 520
 					position = dim2(0, main_window.items.main_holder.AbsolutePosition.X + main_window.items.main_holder.AbsoluteSize.X + 2, 0, main_window.items.main_holder.AbsolutePosition.Y),
 					image = "rbxassetid://115194686863276",
 				})
@@ -2706,8 +2706,9 @@ end)
 				local lineH = math.max(12, textSize - 2) + 4
 				
 				-- Dynamic box height syncing
-				local fullH = objects["holder"].Size.Y.Offset - 2
-				if fullH < 50 then fullH = 148 end
+				-- Use the full holder height to match the box stroke bounds exactly
+				local fullH = objects["holder"].Size.Y.Offset
+				if fullH < 50 then fullH = 150 end
 				
 				if flag_bool("esp_healthbar") and objects[ "healthbar_holder" ].Parent == objects[ "holder" ] then
 					local target = 0.5 + 0.5 * math.sin(tick() * 2)
@@ -2727,7 +2728,7 @@ end)
 						objects[ "healthbar_gradient" ].Rotation = 90
 					end
 					
-					local barHeight = math.max(math.floor((fullH + 1) * mult), 1)
+					local barHeight = math.max(math.floor(fullH * mult), 1)
 					local visibleHeight = math.min(barHeight, fullH)
 					
 					if flag_bool("esp_healthbar_resize_outline") then
@@ -6198,7 +6199,7 @@ end)
 				BorderColor3 = rgb(0, 0, 0),
 				Text = cfg.name,
 				Size = dim2(1, -4, 1, 0),
-				Position = dim2(0, 4, 0, -1),
+				Position = dim2(0, 3, 0, -1), -- Changed from 4 to 3
 				BackgroundTransparency = 1,
 				TextTruncate = Enum.TextTruncate.AtEnd,
 				TextXAlignment = Enum.TextXAlignment.Center, -- Forces text to be perfectly centered
@@ -6917,7 +6918,7 @@ end)
 			})
 			cfg.actions_holder = actions_holder
 			cfg.patterns = patterns
-			cfg.refresh_player_colors = function()
+			cfg.refresh_player_coloars = function()
 				for name, path in pairs(library.playerlist_data) do
 					if typeof(path) == "table" and path.player_name and selected_button ~= path.player_name then
 						path.player_name.TextColor3 = get_display_color(path)
