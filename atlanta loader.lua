@@ -2250,11 +2250,15 @@ end)
 							v:Destroy()
 						elseif v:IsA("BasePart") then
 							v.Anchored = true
+							v.CanCollide = false
 						end
 					end
 					local hum = character:FindFirstChildOfClass("Humanoid")
 					if hum then
-						hum:Destroy()
+						hum.WalkSpeed = 0
+						hum.JumpPower = 0
+						hum.AutoRotate = false
+						if hum:FindFirstChild("Animator") then hum.Animator:Destroy() end
 					end
 					if not character.PrimaryPart then
 						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
@@ -6626,6 +6630,7 @@ end)
 					end)
 				end
 				
+				if nameStr ~= lp.Name then
 				TextButton.MouseButton1Click:Connect(function()
 					local oldSelected = library.selected_player
 					if oldSelected then
@@ -6665,6 +6670,7 @@ end)
 						cfg.labels.team.set(teamDisplay, teamColor)
 					end
 				end)
+			end
 
 				return path 
 			end 
@@ -6693,7 +6699,7 @@ end)
 				if not library.selected_player or not text then 
 					return 
 				end 
-
+				if library.selected_player == lp.Name then return end
 				local path = library.playerlist_data[library.selected_player]
 				path.priority_text.Text = text
 				path.priority_text.TextColor3 = patterns[text] or themes.preset.text
