@@ -5551,10 +5551,10 @@ end)
 				else
 					if is_table and #value > 0 then
 						text.Text = concat(value, ", ")
-					elseif type(value) == "string" then
+					elseif type(value) == "string" and value ~= "" then
 						text.Text = value
 					else
-						text.Text = "nun"
+						text.Text = ""
 					end
 					flags[cfg.flag] = value
 				end
@@ -6738,15 +6738,28 @@ end)
 			end 
 
 			task.spawn(function()
-				task.wait()
+				task.wait(0.5)
 				if library.playerlist_data[lp.Name] then
 					local path = library.playerlist_data[lp.Name]
 					library.selected_player = lp.Name
 					path.player_name.TextColor3 = themes.preset.accent
-					if cfg.labels and cfg.labels.name and cfg.labels.name.set then
+					if cfg.labels.name then 
 						cfg.labels.name.set("User: " .. lp.Name)
 						cfg.labels.display.set("DisplayName: " .. lp.DisplayName)
 						cfg.labels.uid.set("User Id: " .. lp.UserId)
+					end
+					if cfg.labels.team then
+						local teamDisplay = "Team: --"
+						local teamColor = themes.preset.text
+						if lp.Team and lp.Team.Name then
+							local key = lp.Team.Name:lower():gsub("%s+", "")
+							teamDisplay = (key == "guards" and "Team: Guard") or (key == "inmates" or key == "prisoners") and "Team: Inmate" or (key == "criminals" and "Team: Criminal") or ("Team: " .. lp.Team.Name)
+							teamColor = path.team_color
+						end
+						cfg.labels.team.set(teamDisplay, teamColor)
+					end
+					if cfg.selected_icon then
+						cfg.selected_icon.Image = string.format("https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png", lp.UserId)
 					end
 				end
 			end)
