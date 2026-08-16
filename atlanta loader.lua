@@ -6197,7 +6197,7 @@ end)
 				BorderColor3 = rgb(0, 0, 0),
 				Text = cfg.name,
 				Size = dim2(1, -4, 1, 0),
-				Position = dim2(0, 3, 0, -1),
+				Position = dim2(0, 0, 0, -1),
 				BackgroundTransparency = 1,
 				TextTruncate = Enum.TextTruncate.AtEnd,
 				TextXAlignment = Enum.TextXAlignment.Center,
@@ -6750,11 +6750,10 @@ end)
 					end
 					if cfg.labels.team then
 						local teamDisplay = "Team: --"
-						local teamColor = themes.preset.text
+						local teamColor = get_team_color(lp) or themes.preset.text
 						if lp.Team and lp.Team.Name then
 							local key = lp.Team.Name:lower():gsub("%s+", "")
 							teamDisplay = (key == "guards" and "Team: Guard") or (key == "inmates" or key == "prisoners") and "Team: Inmate" or (key == "criminals" and "Team: Criminal") or ("Team: " .. lp.Team.Name)
-							teamColor = path.team_color
 						end
 						cfg.labels.team.set(teamDisplay, teamColor)
 					end
