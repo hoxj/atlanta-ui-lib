@@ -3852,7 +3852,7 @@ end)
 				cfg.value = math.clamp(library:round(value, cfg.intervals), cfg.min, cfg.max)
 
 				fill.Size = dim2((cfg.value - cfg.min) / (cfg.max - cfg.min), 0, 1, 0)
-				slidertext.Text = tostring(cfg.value) .. cfg.suffix .. "/" .. tostring(cfg.max) .. cfg.suffix
+				slidertext.Text = tostring(cfg.value) .. "/" .. tostring(cfg.max)
 				flags[cfg.flag] = cfg.value
 
 				cfg.callback(flags[cfg.flag])
