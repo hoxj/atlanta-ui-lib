@@ -66,7 +66,7 @@
 -- 
 
 	local library = {
-		directory = "Beyond.hook PL",
+		directory = "starkill.cc PL",
 		folders = {
 			"/fonts",
 			"/configs",
@@ -1594,7 +1594,7 @@ local function get_config_name_from_path(file)
 			--  
 
 				local main_window = library:panel({
-					name = "Beyond.Hook PL | " .. os.date("%b %d %Y"), 
+					name = "starkill.cc | " .. os.date("%b %d %Y"), 
 					size = dim2(0, 604, 0, 628),
 					position = dim2(0, (camera.ViewportSize.X / 2) - 302 - 96, 0, (camera.ViewportSize.Y / 2) - 421 - 12),
 					image = "rbxassetid://98823308062942",
@@ -1700,7 +1700,7 @@ local function get_config_name_from_path(file)
 				})
 
 local watermark = library:watermark({
-    default = "Beyond.Hook v1.5.3.2"
+    default = "starkill.cc v1.5.3.2"
 })  
 
 task.spawn(function()
@@ -1718,7 +1718,7 @@ task.spawn(function()
             executorName = string.lower(string.split(ex, " ")[1])
         end
         
-        local text = "Beyond.Hook v1.5.3.2"
+        local text = "starkill.cc v1.5.3.2"
         local wmOpts = flags["wm_options"] or {}
         if type(wmOpts) ~= "table" then wmOpts = {wmOpts} end
         
@@ -1730,10 +1730,10 @@ task.spawn(function()
         end
         
         if has("fps") then
-            text = text .. " | fps: " .. fps
+            text = text .. " | " .. fps .. " fps"
         end
         if has("ping") then
-            text = text .. " | ping: " .. ping
+            text = text .. " | " .. ping .. " ms"
         end
         if has("executor") then
             text = text .. " | " .. executorName
