@@ -2047,8 +2047,24 @@ end)
 					})
 				end
 				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight", "Mesh Chams", "Glow"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
-				section:button_holder({})
-				section:button({name = "target", callback = function()
+				-- round 6: 2x2 action grid (target / view / tp / kill)
+				local actionGrid = library:create("Frame", {
+					Parent = section.holder,
+					Name = "action_grid",
+					Size = dim2(1, -8, 0, 0),
+					BackgroundTransparency = 1,
+					AutomaticSize = Enum.AutomaticSize.Y
+				})
+				library:create("UIGridLayout", {
+					Parent = actionGrid,
+					Name = "",
+					FillDirection = Enum.FillDirection.Horizontal,
+					CellSize = dim2(0.5, -5, 0, 18),
+					CellPadding = dim2(0, 6, 0, 4),
+					SortOrder = Enum.SortOrder.LayoutOrder
+				})
+				local gridHost = setmetatable({ current_holder = actionGrid }, { __index = library })
+				gridHost:button({name = "target", callback = function()
 					if not library.selected_player then return end
 					if library.current_target == library.selected_player then
 						local playerName = library.current_target
@@ -2067,7 +2083,7 @@ end)
 						library.prioritize("Priority")
 					end
 				end})
-				section:button({name = "view", callback = function()
+				gridHost:button({name = "view", callback = function()
 					if not library.selected_player then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if library.viewing_player == library.selected_player then
@@ -2094,7 +2110,7 @@ end)
 						end)
 					end
 				end})
-				section:button({name = "tp", callback = function()
+				gridHost:button({name = "tp", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if not p or not p.Character then return end
@@ -2114,6 +2130,52 @@ end)
 						end)
 					end)
 				end})
+				gridHost:button({name = "kill", callback = function()
+					if not library.selected_player then return end
+					-- round 6: the script side (KillEngine) provides this
+					if library.on_kill_request then
+						library.on_kill_request(library.selected_player)
+					end
+				end})
+
+				-- round 6: gun for kill - every gun in the game (live scan of
+				-- ReplicatedStorage.Tools + the auto equip gun list + m700 /
+				-- revolver), so the list always matches the real tool names
+				local gunItems = {}
+				do
+					local seen = {}
+					local function addGun(g)
+						if type(g) == "string" and g ~= "" and not seen[g] then
+							seen[g] = true
+							gunItems[#gunItems + 1] = g
+						end
+					end
+					pcall(function()
+						local tools = game:GetService("ReplicatedStorage"):FindFirstChild("Tools")
+						if tools then
+							local live = {}
+							for _, t in ipairs(tools:GetChildren()) do
+								if t:IsA("Tool")
+										and (t:GetAttribute("Damage") ~= nil
+											or t:GetAttribute("Range") ~= nil
+											or t:GetAttribute("Behavior") ~= nil
+											or t:GetAttribute("Local_CurrentAmmo") ~= nil) then
+									live[#live + 1] = t.Name
+								end
+							end
+							table.sort(live)
+							for _, g in ipairs(live) do addGun(g) end
+						end
+					end)
+					for _, g in ipairs({"AK-47", "Remington 870", "M9", "M700", "Revolver", "MP5", "M4A1", "FAL", "Sniper", "Taser"}) do addGun(g) end
+				end
+
+				-- round 6: live settings for the kill engine (the gun +
+				-- orbit sliders keep working while it is orbiting)
+				library.kill_settings = { gun = "AK-47", orbit_speed = 90, orbit_distance = 8 }
+				section:dropdown({name = "gun", flag = "KILL_GUN", items = gunItems, default = "AK-47", tooltip = "gun used by the kill button (auto equipped on the selected target)", callback = function(v) library.kill_settings.gun = v end})
+				section:slider({name = "orbit speed", min = 10, max = 360, default = 90, interval = 5, suffix = " deg/s", flag = "KILL_ORBIT_SPEED", tooltip = "how fast the spoofed hrp orbits the target", callback = function(v) library.kill_settings.orbit_speed = v end})
+				section:slider({name = "orbit distance", min = 4, max = 30, default = 8, interval = 1, suffix = " studs", flag = "KILL_ORBIT_DIST", tooltip = "how far the spoofed hrp orbits from the target (underground at -6y)", callback = function(v) library.kill_settings.orbit_distance = v end})
 				section.holder = main_holder
 				section:button_holder({})
 				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
@@ -2236,10 +2298,11 @@ end)
 
 			local character = nil
 			local function build_character()
-				if character then
-					character:Destroy()
-					character = nil
-				end
+				-- round 6: capture the local player exactly ONCE.
+				-- Re-captures are what froze the dummy mid-fall (the clone
+				-- copies the CURRENT animated part CFrames) and what let
+				-- applied self materials leak into the preview.
+				if character then return end
 				if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
 					lp.Character.Archivable = true
 					character = lp.Character:Clone()
@@ -2263,7 +2326,43 @@ end)
 					if not character.PrimaryPart then
 						character.PrimaryPart = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 					end
-					
+
+					-- round 6: reset the clone to the rig REST pose (the
+					-- Motor6D C0/C1 chain - the same trick the csync dummy
+					-- builder uses) so the preview can never be frozen
+					-- mid-walk / mid-fall, no matter when it was captured
+					do
+						local root = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso") or character.PrimaryPart
+						if root then
+							local joints = {}
+							for _, d in ipairs(character:GetDescendants()) do
+								if d:IsA("Motor6D") and d.Part0 and d.Part1 then joints[#joints + 1] = d end
+							end
+							local rel = { [root] = CFrame.new() }
+							local changed, guard = true, 0
+							while changed and guard < 64 do
+								changed = false
+								guard = guard + 1
+								for _, j in ipairs(joints) do
+									local p0, p1 = j.Part0, j.Part1
+									if rel[p0] and not rel[p1] then
+										rel[p1] = rel[p0] * j.C0 * j.C1:Inverse()
+										changed = true
+									elseif rel[p1] and not rel[p0] then
+										rel[p0] = rel[p1] * j.C1 * j.C0:Inverse()
+										changed = true
+									end
+								end
+							end
+							local base = root.CFrame
+							for part, r in pairs(rel) do
+								if part ~= root and part:IsA("BasePart") and part.Parent then
+									part.CFrame = base * r
+								end
+							end
+						end
+					end
+
 					if cfg.items.viewportframe and cfg.items.viewportframe.Parent then
 						character.Parent = cfg.items.viewportframe
 						if cfg.items.camera then
@@ -2282,6 +2381,8 @@ end)
 
 			build_character()
 
+			-- round 6: these stay as retry hooks ONLY - once a capture
+			-- succeeded they never rebuild the preview again
 			library:connection(lp.CharacterAppearanceLoaded, build_character)
 			library:connection(lp.CharacterAdded, function()
 				task.wait(1)
@@ -4321,15 +4422,18 @@ end)
 					PaddingLeft = dim(0, 4)
 				})
 				
+				-- round 6: same construction as the transparency (alpha)
+				-- slider box - gray (inline) body, outline inset ring, then
+				-- the content layer - and the same 14px height
 				local hex_holder = library:create("Frame", {
 					Parent = main_holder_background,
 					Name = "hex_holder",
 					Position = dim2(0, 0, 1, -28),
-					Size = dim2(1, -20, 0, 16),
+					Size = dim2(1, -20, 0, 14),
 					BorderColor3 = rgb(0, 0, 0),
 					BorderSizePixel = 0,
-					BackgroundColor3 = themes.preset.outline,
-				}) library:apply_theme(hex_holder, "outline", "BackgroundColor3")
+					BackgroundColor3 = themes.preset.inline,
+				}) library:apply_theme(hex_holder, "inline", "BackgroundColor3")
 				local hex_inline = library:create("Frame", {
 					Parent = hex_holder,
 					Name = "hex_inline",
@@ -4337,31 +4441,24 @@ end)
 					Size = dim2(1, -2, 1, -2),
 					BorderColor3 = rgb(0, 0, 0),
 					BorderSizePixel = 0,
-                    BackgroundColor3 = themes.preset.low_contrast,
-                }) library:apply_theme(hex_inline, "low_contrast", "BackgroundColor3")
-                local hex_stroke = library:create("UIStroke", {
-                    Parent = hex_inline,
-                    Color = themes.preset.outline,
-                    LineJoinMode = Enum.LineJoinMode.Miter,
-                    Thickness = 1,
-                }) library:apply_theme(hex_stroke, "outline", "Color")
-
-                local hex_input = library:create("TextBox", {
-                    Parent = hex_inline,
-                    Name = "hex_input",
-                    Position = dim2(0, 1, 0, 1),
-                    Size = dim2(1, -2, 1, -2),
-                    BorderSizePixel = 0,
-                    BackgroundTransparency = 1,
-                    FontFace = library.font,
-                    TextColor3 = themes.preset.text,
-                    TextSize = 11,
-                    Text = "#FFFFFF",
-                    PlaceholderText = "#FFFFFF",
-                    PlaceholderColor3 = themes.preset.text,
-                    ClearTextOnFocus = false,
-                    TextXAlignment = Enum.TextXAlignment.Center,
-                }) library:apply_theme(hex_input, "text", "TextColor3")
+					BackgroundColor3 = themes.preset.outline,
+				}) library:apply_theme(hex_inline, "outline", "BackgroundColor3")
+				local hex_input = library:create("TextBox", {
+					Parent = hex_inline,
+					Name = "hex_input",
+					Position = dim2(0, 1, 0, 1),
+					Size = dim2(1, -2, 1, -2),
+					BorderSizePixel = 0,
+					BackgroundTransparency = 1,
+					FontFace = library.font,
+					TextColor3 = themes.preset.text,
+					TextSize = 11,
+					Text = "#FFFFFF",
+					PlaceholderText = "#FFFFFF",
+					PlaceholderColor3 = themes.preset.text,
+					ClearTextOnFocus = false,
+					TextXAlignment = Enum.TextXAlignment.Center,
+				}) library:apply_theme(hex_input, "text", "TextColor3")
 
 				local alpha = library:create("TextButton", {
 					Parent = main_holder_background,
@@ -5623,6 +5720,24 @@ end)
 				cfg.open = not cfg.open 
 
 				cfg.set_visible(cfg.open)
+
+				-- round 6: single-select dropdowns highlight the
+				-- selected option like the multi dropdowns do -
+				-- re-apply the accent every open so it can never
+				-- go stale (theme passes repaint these instances)
+				if cfg.open then
+					local value = flags[cfg.flag]
+					if value ~= nil then
+						local is_table = type(value) == "table"
+						for _, v in next, cfg.option_instances do
+							if v.Text == value or (is_table and find(value, v.Text)) then
+								v.TextColor3 = themes.preset.accent
+							else
+								v.TextColor3 = themes.preset.text
+							end
+						end
+					end
+				end
 			end)
 
 			cfg:refresh_options(cfg.items) 
