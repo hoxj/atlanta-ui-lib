@@ -2172,9 +2172,9 @@ end)
 
 				-- round 6: live settings for the kill engine (the gun +
 				-- orbit sliders keep working while it is orbiting)
-				library.kill_settings = { gun = "AK-47", orbit_speed = 90, orbit_distance = 8 }
+				library.kill_settings = { gun = "AK-47", orbit_speed = 75, orbit_distance = 8 }
 				section:dropdown({name = "gun", flag = "KILL_GUN", items = gunItems, default = "AK-47", tooltip = "gun used by the kill button (auto equipped on the selected target)", callback = function(v) library.kill_settings.gun = v end})
-				section:slider({name = "orbit speed", min = 10, max = 360, default = 90, interval = 5, suffix = " deg/s", flag = "KILL_ORBIT_SPEED", tooltip = "how fast the spoofed hrp orbits the target", callback = function(v) library.kill_settings.orbit_speed = v end})
+				section:slider({name = "orbit speed", min = 1, max = 100, default = 75, interval = 1, suffix = " %", flag = "KILL_ORBIT_SPEED", tooltip = "juju strafe speed: the spoofed hrp sweeps this many full revolutions per second around the target (75 = the classic da hood strafe ring)", callback = function(v) library.kill_settings.orbit_speed = v end})
 				section:slider({name = "orbit distance", min = 4, max = 30, default = 8, interval = 1, suffix = " studs", flag = "KILL_ORBIT_DIST", tooltip = "how far the spoofed hrp orbits from the target (underground at -6y)", callback = function(v) library.kill_settings.orbit_distance = v end})
 				section.holder = main_holder
 				section:button_holder({})
@@ -2539,20 +2539,41 @@ end)
 					LineJoinMode = Enum.LineJoinMode.Miter
 				});
 				
+				-- round 7: top row holder - the name and the team flag sit side
+				-- by side above the box ("name (CR)"), exactly like the real ESP
+				objects[ "top_holder" ] = library:create( "Frame" , {
+					Parent = objects[ "holder" ];
+					BackgroundTransparency = 1;
+					AnchorPoint = vec2(0.5, 1);
+					Position = dim2(0.5, 0, 0, -5);
+					Size = dim2(0, 0, 0, 0);
+					AutomaticSize = Enum.AutomaticSize.XY;
+					BorderSizePixel = 0;
+					BackgroundColor3 = rgb(255, 255, 255)
+				});
+				library:create( "UIListLayout" , {
+					Parent = objects[ "top_holder" ];
+					FillDirection = Enum.FillDirection.Horizontal;
+					HorizontalAlignment = Enum.HorizontalAlignment.Center;
+					VerticalAlignment = Enum.VerticalAlignment.Bottom;
+					SortOrder = Enum.SortOrder.LayoutOrder;
+					Padding = UDim.new(0, 3)
+				});
 				objects[ "name" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
-					Parent = objects[ "holder" ];
+					Parent = objects[ "top_holder" ];
+					LayoutOrder = 1;
 					TextColor3 = flag_color("esp_name_color");
 					BorderColor3 = rgb(0, 0, 0);
 					Text = string.format("%s (@%s)", lp.DisplayName or lp.Name, lp.Name);
 					Name = "\0";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(0.5, 1);
-					Size = dim2(1, 0, 0, 0);
+					AnchorPoint = vec2(0, 0);
+					Size = dim2(0, 0, 0, 0);
 					BackgroundTransparency = 1;
-					Position = dim2(0.5, 0, 0, -5);
+					Position = dim2(0, 0, 0, 0);
 					BorderSizePixel = 0;
-					AutomaticSize = Enum.AutomaticSize.Y;
+					AutomaticSize = Enum.AutomaticSize.XY;
 					TextSize = 14;
 				});
 				
@@ -2690,16 +2711,18 @@ end)
 					TextXAlignment = Enum.TextXAlignment.Left;
 				});
 				
+				-- round 7: team flag lives in the top row, right of the name
 				objects[ "team_flag" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
-					Parent = objects[ "holder" ];
+					Parent = objects[ "top_holder" ];
+					LayoutOrder = 2;
 					TextColor3 = rgb(255, 200, 100);
-					Text = "Inmates";
+					Text = "(IN)";
 					TextStrokeTransparency = 0;
 					AnchorPoint = vec2(0, 0);
 					AutomaticSize = Enum.AutomaticSize.XY;
 					BackgroundTransparency = 1;
-					Position = dim2(1, 5, 0, 14);
+					Position = dim2(0, 0, 0, 0);
 					BorderSizePixel = 0;
 					TextSize = 12;
 					TextXAlignment = Enum.TextXAlignment.Left;
@@ -2949,8 +2972,11 @@ end)
 				local fontFace = (st and st.ESPFont) or library.font
 				safe_set_parent(objects.holder, flag_bool("esp_enabled") and items.viewportframe or library.cache)
 
+				-- round 7: the name lives in the top row holder (team flag right of it)
+				objects["top_holder"].Visible = flag_bool("esp_names") or flag_bool("esp_team_flag")
+				safe_set_parent(objects["top_holder"], (flag_bool("esp_names") or flag_bool("esp_team_flag")) and objects["holder"] or library.cache)
 				objects["name"].Visible = flag_bool("esp_names")
-				safe_set_parent(objects["name"], flag_bool("esp_names") and objects["holder"] or library.cache)
+				safe_set_parent(objects["name"], flag_bool("esp_names") and objects["top_holder"] or library.cache)
 				objects["name"].TextColor3 = flag_color("esp_name_color")
 				objects["name"].TextSize = textSize
 				if objects["name"].FontFace then objects["name"].FontFace = fontFace end
@@ -3004,15 +3030,24 @@ end)
 				end
 
 				if flag_bool("esp_team_flag") then
-					objects["team_flag"].Visible = true
-					safe_set_parent(objects["team_flag"], objects["holder"])
-					objects["team_flag"].TextSize = math.max(8, textSize - 2)
-					objects["team_flag"].AnchorPoint = vec2(0, 0)
-					objects["team_flag"].Position = dim2(1, 5, 0, flagY)
-					objects["team_flag"].TextXAlignment = Enum.TextXAlignment.Left
-					if st and st.FlagTeamInmatesColor then
-						objects["team_flag"].TextColor3 = type(st.FlagTeamInmatesColor) == "table" and st.FlagTeamInmatesColor.Color or st.FlagTeamInmatesColor
+					-- round 7: "(GU)" / "(IN)" / "(CR)" right of the name, real
+					-- team code + real team color (same as starkill's
+					-- GetPlayerTeamFlag) - no longer part of the side stack
+					local teamCode = "?"
+					local teamCol = rgb(255, 200, 100)
+					local myTeam = lp.Team
+					if myTeam then
+						local tn = (myTeam.Name or ""):lower()
+						teamCode = (tn == "inmates" and "IN") or (tn == "guards" and "GU") or (tn == "criminals" and "CR") or ((myTeam.Name or ""):sub(1, 2):upper())
+						if myTeam.TeamColor then teamCol = myTeam.TeamColor.Color end
 					end
+					objects["team_flag"].Visible = true
+					safe_set_parent(objects["team_flag"], objects["top_holder"])
+					objects["team_flag"].Text = "(" .. teamCode .. ")"
+					objects["team_flag"].TextSize = textSize
+					objects["team_flag"].AnchorPoint = vec2(0, 0)
+					objects["team_flag"].TextXAlignment = Enum.TextXAlignment.Left
+					objects["team_flag"].TextColor3 = teamCol
 					if objects["team_flag"].FontFace then objects["team_flag"].FontFace = fontFace end
 				else
 					objects["team_flag"].Visible = false
