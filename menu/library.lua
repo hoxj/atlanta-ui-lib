@@ -2287,8 +2287,8 @@ end)
 				    return table.concat(out)
 				end
 
-				-- ===== the window (target hud look) =====
-				local SPOTIFY_W, SPOTIFY_H = 202, 84
+				-- ===== the window (target hud look, round 10: art + like + icon) =====
+				local SPOTIFY_W, SPOTIFY_H = 224, 106
 				local spotifyGui = Instance.new("ScreenGui")
 				spotifyGui.Name = "SKSpotifyPlayer"
 				spotifyGui.ResetOnSpawn = false
@@ -2342,27 +2342,129 @@ end)
 				    return lbl
 				end
 
+				-- header (icon + text) - the icon downloads once from the
+				-- vape repo assets; if that fails the text stands alone
+				local spHeaderIcon = Instance.new("ImageLabel")
+				spHeaderIcon.Name = "Icon"
+				spHeaderIcon.Size = UDim2.new(0, 12, 0, 12)
+				spHeaderIcon.Position = UDim2.new(0, 5, 0, 1)
+				spHeaderIcon.BackgroundTransparency = 1
+				spHeaderIcon.BorderSizePixel = 0
+				spHeaderIcon.Visible = false
+				spHeaderIcon.Parent = spBody
 				local spHeader = skLabel("spotify", 13, Color3.fromRGB(255, 255, 255))
 				spHeader.Position = UDim2.new(0, 0, 0, 2)
-				spHeader.Size = UDim2.new(1, 0, 0, 16)
+				spHeader.Size = UDim2.new(1, -28, 0, 16)
 				spHeader.Parent = spBody
 				local spHeaderPad = Instance.new("UIPadding")
-				spHeaderPad.PaddingLeft = UDim.new(0, 4)
+				spHeaderPad.PaddingLeft = UDim.new(0, 20)
 				spHeaderPad.Parent = spHeader
+				do
+				    local iconPath = dir .. "/spotify_icon.png"
+				    pcall(function()
+					if type(isfile) == "function" and type(writefile) == "function" and not isfile(iconPath) then
+					    local data = game:HttpGet("https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/refs/heads/main/src/guis/new/assets/spotify.png")
+					    writefile(iconPath, data)
+					end
+				    end)
+				    pcall(function()
+					spHeaderIcon.Image = getcustomasset(iconPath)
+					spHeaderIcon.Visible = true
+				    end)
+				end
+
+				-- the like-song icon holder (top right): a heart built from
+				-- frames (a rotated square + two circles) inside a target-hud
+				-- styled box - gray = not liked, green = liked, click toggles
+				local spLikeHolder = Instance.new("TextButton")
+				spLikeHolder.Name = "Like"
+				spLikeHolder.AnchorPoint = Vector2.new(1, 0)
+				spLikeHolder.Position = UDim2.new(1, -3, 0, 1)
+				spLikeHolder.Size = UDim2.new(0, 18, 0, 18)
+				spLikeHolder.BackgroundColor3 = themes.preset.outline
+				spLikeHolder.BorderSizePixel = 0
+				spLikeHolder.AutoButtonColor = false
+				spLikeHolder.Text = ""
+				spLikeHolder.Parent = spBody
+				library:apply_theme(spLikeHolder, "outline", "BackgroundColor3")
+				local spLikeInline = Instance.new("Frame")
+				spLikeInline.Position = UDim2.new(0, 1, 0, 1)
+				spLikeInline.Size = UDim2.new(1, -2, 1, -2)
+				spLikeInline.BackgroundColor3 = themes.preset.inline
+				spLikeInline.BorderSizePixel = 0
+				spLikeInline.Parent = spLikeHolder
+				library:apply_theme(spLikeInline, "inline", "BackgroundColor3")
+				local spLikeHeartParts = {}
+				local function skHeartPart(w, x, y, round)
+				    local f = Instance.new("Frame")
+				    f.AnchorPoint = Vector2.new(0.5, 0.5)
+				    f.Position = UDim2.new(0, x, 0, y)
+				    f.Size = UDim2.new(0, w, 0, w)
+				    f.BackgroundColor3 = Color3.fromRGB(170, 170, 170)
+				    f.BorderSizePixel = 0
+				    f.ZIndex = 2
+				    if round then
+					local c = Instance.new("UICorner")
+					c.CornerRadius = UDim.new(0.5, 0)
+					c.Parent = f
+				    else
+					f.Rotation = 45
+				    end
+				    f.Parent = spLikeHolder
+				    spLikeHeartParts[#spLikeHeartParts + 1] = f
+				    return f
+				end
+				skHeartPart(8, 9, 11, false) -- the rotated square (bottom point)
+				skHeartPart(8, 6, 8, true)  -- left lobe
+				skHeartPart(8, 12, 8, true) -- right lobe
+				local function skUpdateLikeUI(liked)
+				    local col = liked and Color3.fromRGB(80, 200, 80) or Color3.fromRGB(170, 170, 170)
+				    for _, f in ipairs(spLikeHeartParts) do
+					f.BackgroundColor3 = col
+				    end
+				end
+				local skToggleLike = nil -- assigned by the engine (FIX 2c)
+				spLikeHolder.MouseButton1Click:Connect(function()
+				    if skToggleLike then skToggleLike() end
+				end)
+
+				-- album art (from the track lookup coverArt)
+				local spArtOuter = Instance.new("Frame")
+				spArtOuter.Name = "Art"
+				spArtOuter.Position = UDim2.new(0, 8, 0, 22)
+				spArtOuter.Size = UDim2.new(0, 48, 0, 48)
+				spArtOuter.BackgroundColor3 = themes.preset.outline
+				spArtOuter.BorderSizePixel = 0
+				spArtOuter.Parent = spBody
+				library:apply_theme(spArtOuter, "outline", "BackgroundColor3")
+				local spArtInline = Instance.new("Frame")
+				spArtInline.Position = UDim2.new(0, 1, 0, 1)
+				spArtInline.Size = UDim2.new(1, -2, 1, -2)
+				spArtInline.BackgroundColor3 = themes.preset.inline
+				spArtInline.BorderSizePixel = 0
+				spArtInline.Parent = spArtOuter
+				library:apply_theme(spArtInline, "inline", "BackgroundColor3")
+				local spArt = Instance.new("ImageLabel")
+				spArt.Size = UDim2.new(1, 0, 1, 0)
+				spArt.BackgroundTransparency = 1
+				spArt.BorderSizePixel = 0
+				spArt.ScaleType = Enum.ScaleType.Stretch
+				spArt.Image = ""
+				spArt.Parent = spArtInline
 
 				local spTitle = skLabel("not playing", 13, Color3.fromRGB(255, 255, 255))
-				spTitle.Position = UDim2.new(0, 6, 0, 19)
-				spTitle.Size = UDim2.new(1, -12, 0, 15)
+				spTitle.Position = UDim2.new(0, 64, 0, 24)
+				spTitle.Size = UDim2.new(1, -70, 0, 14)
 				spTitle.Parent = spBody
 
 				local spArtist = skLabel("", 11, Color3.fromRGB(170, 170, 170))
-				spArtist.Position = UDim2.new(0, 7, 0, 34)
-				spArtist.Size = UDim2.new(1, -13, 0, 12)
+				spArtist.Position = UDim2.new(0, 65, 0, 40)
+				spArtist.Size = UDim2.new(1, -71, 0, 12)
 				spArtist.Parent = spBody
 
 				-- the progress bar: health-bar style, NOT rounded
 				local spBarOuter = Instance.new("Frame")
-				spBarOuter.Position = UDim2.new(0, 7, 0, 50)
+				spBarOuter.Position = UDim2.new(0, 7, 0, 76)
 				spBarOuter.Size = UDim2.new(1, -14, 0, 8)
 				spBarOuter.BackgroundColor3 = themes.preset.outline
 				spBarOuter.BorderSizePixel = 0
@@ -2405,30 +2507,24 @@ end)
 				spFillGrad.Parent = spBarFill
 
 				local spTimeCur = skLabel("0:00", 10, Color3.fromRGB(180, 180, 180))
-				spTimeCur.Position = UDim2.new(0, 7, 0, 60)
+				spTimeCur.Position = UDim2.new(0, 8, 0, 88)
 				spTimeCur.Size = UDim2.new(0, 80, 0, 12)
 				spTimeCur.Parent = spBody
 
 				local spTimeLen = skLabel("0:00", 10, Color3.fromRGB(180, 180, 180), Enum.TextXAlignment.Right)
 				spTimeLen.AnchorPoint = Vector2.new(1, 0)
-				spTimeLen.Position = UDim2.new(1, -7, 0, 60)
+				spTimeLen.Position = UDim2.new(1, -8, 0, 88)
 				spTimeLen.Size = UDim2.new(0, 80, 0, 12)
 				spTimeLen.Parent = spBody
 
-				-- drag + saved position
-				local spPosFile = dir .. "/spotify_pos.txt"
+				-- drag + position saved through the CONFIG SYSTEM (round 10):
+				-- the drag writes library.flags.spotify_x / spotify_y, which
+				-- get_config saves into your .cfg file, and the config_flags
+				-- loaders below apply them on load - no separate txt file
 				local function spApplyPos(x, y)
 				    spotifyFrame.AnchorPoint = Vector2.new(0, 0)
 				    spotifyFrame.Position = UDim2.new(0, x, 0, y)
 				end
-				pcall(function()
-				    if type(isfile) == "function" and type(readfile) == "function" and isfile(spPosFile) then
-					local d = httpService:JSONDecode(readfile(spPosFile))
-					if type(d.x) == "number" and type(d.y) == "number" then
-					    spApplyPos(d.x, d.y)
-					end
-				    end
-				end)
 				do
 				    local dragging, dragStart, startPos = false, nil, nil
 				    spotifyFrame.Active = true
@@ -2453,13 +2549,28 @@ end)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
 					    dragging = false
 					    pcall(function()
-						if type(writefile) == "function" then
-						    local ap = spotifyFrame.AbsolutePosition
-						    writefile(spPosFile, httpService:JSONEncode({ x = math.floor(ap.X), y = math.floor(ap.Y) }))
+						local ap = spotifyFrame.AbsolutePosition
+						flags["spotify_x"] = math.floor(ap.X)
+						flags["spotify_y"] = math.floor(ap.Y)
+						-- round 10: delete the old separate position file
+						local oldPos = dir .. "/spotify_pos.txt"
+						if type(isfile) == "function" and type(delfile) == "function" and isfile(oldPos) then
+						    pcall(delfile, oldPos)
 						end
 					    end)
 					end
 				    end)
+				end
+				-- round 10: the position loads back from the config file
+				library.config_flags["spotify_x"] = function(v)
+				    if type(v) == "number" then
+					spApplyPos(v, flags["spotify_y"] or spotifyFrame.Position.Y.Offset)
+				    end
+				end
+				library.config_flags["spotify_y"] = function(v)
+				    if type(v) == "number" then
+					spApplyPos(flags["spotify_x"] or spotifyFrame.Position.X.Offset, v)
+				    end
 				end
 
 				-- ===== the engine (vape V4 Render/Spotify.lua) =====
@@ -2577,12 +2688,77 @@ end)
 					if data.player_state.track then
 					    self:RequestCache(data.player_state.track.uri, data.player_state.track)
 					    self.track = data.player_state.track.uri
+					    -- round 10: liked state is per track - re-check it
+					    self.liked = nil
 					    spTitle.Text = data.player_state.track.metadata.title
 						or (self.Cache[self.track] and self.Cache[self.track].Title) or "unknown"
 					    spArtist.Text = (self.Cache[self.track] and table.concat(self.Cache[self.track].Artists, ', ')) or ""
+					    spArt.Image = (self.Cache[self.track] and self.Cache[self.track].Art) or ""
+					    self:RefreshLikeState()
 					end
 				    end
 				end
+
+				-- round 10: the like-song support (api.spotify.com with the
+				-- web-player token) - poll the liked state per track, toggle
+				-- on click
+				local function skTrackIdFromUri(uri)
+				    return type(uri) == "string" and uri:match("^spotify:track:(.+)$") or nil
+				end
+				function SpotifyHandler:RefreshLikeState()
+				    local trackId = skTrackIdFromUri(self.track)
+				    if not trackId or not self.Data or not self.Data.accessToken or not self.clientToken then
+					skUpdateLikeUI(false)
+					return
+				    end
+				    task.spawn(function()
+					local res = safeRequest({
+					    Url = 'https://api.spotify.com/v1/me/tracks/contains?ids=' .. trackId,
+					    Method = 'GET',
+					    Headers = {
+						Accept = 'application/json',
+						Authorization = 'Bearer ' .. self.Data.accessToken,
+						['client-token'] = self.clientToken,
+						Origin = 'https://open.spotify.com',
+						Referer = 'https://open.spotify.com/',
+						['User-Agent'] = self.Headers['User-Agent']
+					    }
+					})
+					if res.Success then
+					    local okD, contains = pcall(httpService.JSONDecode, httpService, res.Body)
+					    if okD and type(contains) == "table" and type(contains[1]) == "boolean" then
+						self.liked = contains[1]
+						skUpdateLikeUI(self.liked)
+					    end
+					end
+				    end)
+				end
+				function SpotifyHandler:ToggleLike()
+				    local trackId = skTrackIdFromUri(self.track)
+				    if not trackId or not self.Data or not self.Data.accessToken then return end
+				    local want = not self.liked
+				    task.spawn(function()
+					local res = safeRequest({
+					    Url = 'https://api.spotify.com/v1/me/tracks?ids=' .. trackId,
+					    Method = want and 'PUT' or 'DELETE',
+					    Headers = {
+						Authorization = 'Bearer ' .. self.Data.accessToken,
+						['client-token'] = self.clientToken,
+						['Content-Type'] = 'application/json',
+						Origin = 'https://open.spotify.com',
+						Referer = 'https://open.spotify.com/',
+						['User-Agent'] = self.Headers['User-Agent']
+					    }
+					})
+					if res.Success then
+					    self.liked = want
+					    skUpdateLikeUI(want)
+					else
+					    library:notification({text = 'Spotify: failed to ' .. (want and 'like' or 'unlike') .. ' the song (the token may lack the library permission)', time = 8})
+					end
+				    end)
+				end
+				skToggleLike = function() SpotifyHandler:ToggleLike() end
 
 				function SpotifyHandler:Refresh()
 				    local mainPage = safeRequest({
@@ -2677,6 +2853,7 @@ end)
 					    local lArtist = data.metadata.artist_uri:sub(15)
 					    self.Cache[id].Artists = { lArtist ~= '' and lArtist or 'None' }
 					    spArtist.Text = table.concat(self.Cache[id].Artists, ', ')
+					    spArt.Image = "" -- round 10: local files have no art
 					    return
 					end
 					if self.Data.fetchKey then
@@ -2717,12 +2894,18 @@ end)
 								for _, artist in ipairs(track.data.artists.items) do
 								    table.insert(self.Cache[id].Artists, artist.profile.name)
 								end
+								-- round 10: album art (the biggest coverArt source)
+								local coverArt = track.data.albumOfTrack and track.data.albumOfTrack.coverArt
+								if coverArt and type(coverArt.sources) == "table" and #coverArt.sources > 0 then
+								    self.Cache[id].Art = coverArt.sources[#coverArt.sources].url
+								end
 							    elseif track.data.__typename == 'Episode' then
 								table.insert(self.Cache[id].Artists, track.data.podcastV2.data.publisher.name)
 							    end
 							    if self.track == id then
 								spTitle.Text = self.Cache[id].Title
 								spArtist.Text = table.concat(self.Cache[id].Artists, ', ')
+								spArt.Image = self.Cache[id].Art or ""
 							    end
 							end
 						    end
@@ -2889,13 +3072,27 @@ end)
 				    local function done() self._starting = false end
 				    if not self.active then done() return end
 				    local cookiePath = dir .. "/spotify.txt"
-				    if type(isfile) ~= "function" or not isfile(cookiePath) then
-					library:notification({text = 'Spotify: Missing cookie! (dump the sp_dc cookie from the browser and write it to ' .. cookiePath .. ')', time = 30})
+				    -- round 10: the cookie file is CREATED if it doesn't exist
+				    -- (it never did - nothing ever wrote it, so "I see no
+				    -- spotify.txt" was always true). Open it, paste your sp_dc
+				    -- cookie, press the button again.
+				    pcall(function()
+					if type(writefile) == "function" and (type(isfile) ~= "function" or not isfile(cookiePath)) then
+					    writefile(cookiePath, "")
+					end
+				    end)
+				    local cookie = ""
+				    pcall(function()
+					if type(readfile) == "function" and type(isfile) == "function" and isfile(cookiePath) then
+					    cookie = readfile(cookiePath) or ""
+					end
+				    end)
+				    cookie = cookie:gsub('^%s+', ''):gsub('%s+$', '')
+				    if cookie == "" then
+					library:notification({text = 'Spotify: open ' .. cookiePath .. ' and paste your sp_dc cookie (browser devtools > cookies > open.spotify.com > sp_dc), then press the button again', time = 30})
 					done()
 					return
 				    end
-				    local cookie = readfile(cookiePath)
-				    cookie = cookie:gsub('^%s+', ''):gsub('%s+$', '')
 				    self.Headers = {
 					Cookie = 'sp_dc=' .. cookie .. ';',
 					['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0'
@@ -2983,14 +3180,17 @@ end)
 					spotifyGui.Enabled = false
 					spTitle.Text = "not playing"
 					spArtist.Text = ""
+					spArt.Image = ""
 					spTimeCur.Text = "0:00"
 					spTimeLen.Text = "0:00"
 					spBarFill.Size = UDim2.fromScale(0, 1)
+					skUpdateLikeUI(false)
 				    else
 					SpotifyHandler.active = true
 					spotifyGui.Enabled = true
 					spTitle.Text = "connecting..."
 					spArtist.Text = ""
+					spArt.Image = ""
 					task.spawn(function()
 					    pcall(function() SpotifyHandler:Start() end)
 					end)
