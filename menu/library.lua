@@ -2585,6 +2585,23 @@ end)
 				    return { Success = false, Body = tostring(req) }
 				end
 
+				-- round 10b: tolerant JSON decode. Executors differ: some return
+				-- the body already decoded as a table, some prepend a UTF-8 BOM,
+				-- some leave trailing NULs. A plain JSONDecode throws on all of
+				-- those, which surfaced as a cryptic "Can't parse JSON".
+				local function skDecodeJSON(body)
+				    if type(body) == "table" then return body end
+				    if type(body) ~= "string" then return nil end
+				    local ok, decoded = pcall(httpService.JSONDecode, httpService, body)
+				    if ok then return decoded end
+				    local cleaned = body:gsub("^\239\187\191", ""):gsub("%z+$", "")
+				    if cleaned ~= body then
+					local ok2, decoded2 = pcall(httpService.JSONDecode, httpService, cleaned)
+					if ok2 then return decoded2 end
+				    end
+				    return nil
+				end
+
 				local SpotifyHandler = { Cache = {}, active = false }
 
 				do
@@ -2651,9 +2668,15 @@ end)
 				    end
 
 				    function SpotifyHandler.readURLAndConfig(code)
-					local appCfg = code:find('appServerConfig\" type=\"text\/plain\">')
-					return code:match('(https://[^"\']+/web%-player%.[0-9a-f]+%.js)'),
-					    appCfg and httpService:JSONDecode(skBase64Decode(code:sub(appCfg + 35, code:find('<', appCfg + 1) - 1))) or nil
+					local appCfg = code:find('appServerConfig" type="text/plain">')
+					local cfgData = nil
+					if appCfg then
+					    local okCfg, cfgDecoded = pcall(function()
+						return httpService:JSONDecode(skBase64Decode(code:sub(appCfg + 35, code:find('<', appCfg + 1) - 1)))
+					    end)
+					    if okCfg and type(cfgDecoded) == "table" then cfgData = cfgDecoded end
+					end
+					return code:match('(https://[^"\']+/web%-player%.[0-9a-f]+%.js)'), cfgData
 				    end
 
 				    function SpotifyHandler.readOTPCodes(code)
@@ -2725,8 +2748,8 @@ end)
 					    }
 					})
 					if res.Success then
-					    local okD, contains = pcall(httpService.JSONDecode, httpService, res.Body)
-					    if okD and type(contains) == "table" and type(contains[1]) == "boolean" then
+					    local contains = skDecodeJSON(res.Body)
+					    if type(contains) == "table" and type(contains[1]) == "boolean" then
 						self.liked = contains[1]
 						skUpdateLikeUI(self.liked)
 					    end
@@ -2742,6 +2765,7 @@ end)
 					    Url = 'https://api.spotify.com/v1/me/tracks?ids=' .. trackId,
 					    Method = want and 'PUT' or 'DELETE',
 					    Headers = {
+						['Accept-Encoding'] = 'identity',
 						Authorization = 'Bearer ' .. self.Data.accessToken,
 						['client-token'] = self.clientToken,
 						['Content-Type'] = 'application/json',
@@ -2786,7 +2810,32 @@ end)
 							Headers = self.Headers
 						    })
 						    if authData.Success then
-							authData = httpService:JSONDecode(authData.Body)
+							-- round 10b: the token endpoint returns JSON only when the cookie
+							-- is valid. Guard the decode so a bad/expired sp_dc gives a clear
+							-- message instead of "Can't parse JSON".
+							local decoded = skDecodeJSON(authData.Body)
+							if type(decoded) ~= "table" then
+							-- round 10b: tell apart a compressed/non-text body (executor
+							-- did not decode it) from a real Spotify rejection
+							    local rawBody = tostring(authData.Body or "")
+							    local printable = rawBody:gsub("[%c]", "")
+							    if #rawBody > 0 and #printable < #rawBody * 0.85 then
+								error("Spotify auth returned a compressed/non-text response - your executor did not decompress the reply. Update the executor (or use one with a working request/gzip).")
+							    end
+							    local snippet = rawBody:gsub("%s+", " "):sub(1, 160)
+							    error("Spotify rejected the sign-in (sp_dc cookie invalid or expired). Server said: " .. snippet)
+							end
+							authData = decoded
+							if not authData.accessToken then
+							    -- round 10b: Spotify puts the reason in error.message when the
+							    -- response is the 400 json (expired cookie / expired otp version)
+							    local err = authData.error
+							    local reason = authData.error_description
+							    if type(err) == "table" then reason = reason or err.message end
+							    if type(err) == "string" then reason = reason or err end
+							    if authData.totpVerExpired then reason = reason or "the web player otp version expired - spotify updated their player, the script needs an update" end
+							    error("Spotify auth failed: " .. tostring(reason or "no access token in the response"))
+							end
 							return {
 							    clientId = authData.clientId,
 							    clientVersion = appCfg.clientVersion,
@@ -2805,7 +2854,7 @@ end)
 						error('Failed to get script data: ' .. tostring(scriptCode.Body))
 					    end
 					else
-					    error('Failed to get script url or app config.')
+					    error('Failed to read the Spotify web player page - the sp_dc cookie is invalid/expired, or Spotify changed the page. Try copying sp_dc again.')
 					end
 				    else
 					error('Failed to get main page: ' .. tostring(mainPage.Body))
@@ -2818,6 +2867,7 @@ end)
 					Method = 'POST',
 					Headers = {
 					    Accept = 'application/json',
+					    ['Accept-Encoding'] = 'identity',
 					    ['Content-Type'] = 'application/json',
 					    Origin = 'https://open.spotify.com',
 					    Referer = 'https://open.spotify.com/',
@@ -2839,8 +2889,11 @@ end)
 					})
 				    })
 				    if sessionData.Success then
-					sessionData = httpService:JSONDecode(sessionData.Body)
-					return sessionData.granted_token.token
+					local decodedSess = skDecodeJSON(sessionData.Body)
+					if type(decodedSess) ~= "table" or not decodedSess.granted_token then
+					    error('Failed to get device session: ' .. tostring(sessionData.Body):sub(1, 160))
+					end
+					return decodedSess.granted_token.token
 				    else
 					error('Failed to get device session: ' .. tostring(sessionData.Body))
 				    end
@@ -2863,6 +2916,7 @@ end)
 						    Method = 'POST',
 						    Headers = {
 							Accept = 'application/json',
+							['Accept-Encoding'] = 'identity',
 							Authorization = 'Bearer ' .. self.Data.accessToken,
 							['Content-Type'] = 'application/json',
 							['client-token'] = self.clientToken,
@@ -2923,6 +2977,7 @@ end)
 					    Url = 'https://' .. self.Dealer.Client .. '/track-playback/v1/devices',
 					    Method = 'POST',
 					    Headers = {
+						['Accept-Encoding'] = 'identity',
 						Authorization = 'Bearer ' .. self.Data.accessToken,
 						['Content-Type'] = 'application/json',
 						['client-token'] = self.clientToken,
@@ -2978,6 +3033,7 @@ end)
 						Method = 'PUT',
 						Headers = {
 						    Accept = 'application/json',
+						    ['Accept-Encoding'] = 'identity',
 						    Authorization = 'Bearer ' .. self.Data.accessToken,
 						    ['client-token'] = self.clientToken,
 						    Origin = 'https://open.spotify.com',
@@ -3087,7 +3143,14 @@ end)
 					    cookie = readfile(cookiePath) or ""
 					end
 				    end)
-				    cookie = cookie:gsub('^%s+', ''):gsub('%s+$', '')
+				    cookie = cookie:gsub('%s+', '')
+				    -- round 10b: accept the cookie however it was copied - just the value,
+				    -- the whole "sp_dc=...;" pair, a quoted value, or the full cookie header
+				    cookie = cookie:gsub('^["\']+', ''):gsub('["\']+$', '')
+				    local dcMatch = cookie:match('sp_dc=([^;]+)')
+				    if dcMatch then cookie = dcMatch end
+				    cookie = cookie:gsub('^["\']+', ''):gsub('["\']+$', '')
+				    cookie = cookie:gsub(';+$', '')
 				    if cookie == "" then
 					library:notification({text = 'Spotify: open ' .. cookiePath .. ' and paste your sp_dc cookie (browser devtools > cookies > open.spotify.com > sp_dc), then press the button again', time = 30})
 					done()
@@ -3095,6 +3158,7 @@ end)
 				    end
 				    self.Headers = {
 					Cookie = 'sp_dc=' .. cookie .. ';',
+					['Accept-Encoding'] = 'identity', -- round 10b: never get brotli back
 					['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0'
 				    }
 				    local dataPath = dir .. "/spotifydata.txt"
