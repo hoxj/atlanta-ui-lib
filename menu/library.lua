@@ -1321,6 +1321,14 @@ local function get_config_name_from_path(file)
 					library.current_element_open.open = false 
 					library.current_element_open = nil 
 				end
+
+				-- round 9: script-side "menu opened" hook (the
+				-- HUDs pop up so they can be dragged around)
+				pcall(function()
+					if library.on_menu_visibility then
+						library.on_menu_visibility(bool)
+					end
+				end)
 			end 
 
 				dock_outline = library:create("Frame", {
@@ -1841,6 +1849,13 @@ end)
 					end 
 				end})
 				section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15, interval = 1})
+				-- round 9: spotify player (vape V4 Render/Spotify.lua port)
+				section:button_holder({})
+				section:button({name = "Spotify Player", callback = function()
+					if library.spotify_player and library.spotify_player.toggle then
+						library.spotify_player.toggle()
+					end
+				end})
 			-- 
 
 				local holder = library:panel({
@@ -2172,15 +2187,818 @@ end)
 
 				-- round 6: live settings for the kill engine (the gun +
 				-- orbit sliders keep working while it is orbiting)
-				library.kill_settings = { gun = "AK-47", orbit_speed = 75, orbit_distance = 8 }
+				-- round 7: orbit_speed uses juju's exact strafe semantics -
+				-- the "%" slider from the da hood script (1-100, default 75)
+				-- round 9: follow mode - underground / above / behind
+				library.kill_settings = { gun = "AK-47", orbit_speed = 75, orbit_distance = 8, follow_mode = "underground" }
 				section:dropdown({name = "gun", flag = "KILL_GUN", items = gunItems, default = "AK-47", tooltip = "gun used by the kill button (auto equipped on the selected target)", callback = function(v) library.kill_settings.gun = v end})
-				section:slider({name = "orbit speed", min = 1, max = 100, default = 75, interval = 1, suffix = " %", flag = "KILL_ORBIT_SPEED", tooltip = "juju strafe speed: the spoofed hrp sweeps this many full revolutions per second around the target (75 = the classic da hood strafe ring)", callback = function(v) library.kill_settings.orbit_speed = v end})
-				section:slider({name = "orbit distance", min = 4, max = 30, default = 8, interval = 1, suffix = " studs", flag = "KILL_ORBIT_DIST", tooltip = "how far the spoofed hrp orbits from the target (underground at -6y)", callback = function(v) library.kill_settings.orbit_distance = v end})
+				section:dropdown({name = "follow mode", flag = "KILL_FOLLOW_MODE", items = {"underground", "above", "behind"}, default = "underground", tooltip = "underground = the strafe ring 8 studs under the target. above = the ring 8 studs over the target. behind = a fixed spot 5 studs behind the target's back, facing them", callback = function(v) library.kill_settings.follow_mode = v end})
+				section:slider({name = "orbit speed", min = 1, max = 100, default = 75, interval = 1, suffix = " %", flag = "KILL_ORBIT_SPEED", tooltip = "juju strafe speed: the spoofed hrp sweeps this many full revolutions per second around the target (75 = the classic da hood strafe ring) - underground / above modes only", callback = function(v) library.kill_settings.orbit_speed = v end})
+				section:slider({name = "orbit distance", min = 4, max = 30, default = 8, interval = 1, suffix = " studs", flag = "KILL_ORBIT_DIST", tooltip = "how far the spoofed hrp orbits from the target (underground / above modes only)", callback = function(v) library.kill_settings.orbit_distance = v end})
 				section.holder = main_holder
 				section:button_holder({})
 				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
 				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = hex("23ff0a"), callback = function(c) end})
 			--  
+
+			-- round 9: spotify player (vape V4 Render/Spotify.lua port)
+			do
+			    local wsConnect = (type(WebSocket) == "table" and type(WebSocket.connect) == "function") and WebSocket.connect or nil
+			    local skRequestFn = request or (syn and syn.request) or http_request or (http and http.request) or nil
+			    if not wsConnect or not skRequestFn then
+				-- no websocket / request support: the button explains instead of failing silently
+				library.spotify_player = {
+				    toggle = function()
+					library:notification({text = "spotify: this executor is missing " .. (not skRequestFn and "request" or "websocket") .. " support", time = 5})
+				    end,
+				}
+			    else
+				local dir = library.directory
+				local httpService = game:GetService("HttpService")
+				local skGuiParent = (type(gethui) == "function" and gethui()) or game:GetService("CoreGui")
+
+				-- ===== pure-lua sha1 + base64 (the vape port relies on
+				-- hash.sha1 / base64decode which are not guaranteed) =====
+				local function skSha1(msg)
+				    local len = #msg
+				    local padded = msg .. "\128" .. string.rep("\0", (55 - len) % 64) .. string.pack(">I8", len * 8)
+				    local h0, h1, h2, h3, h4 = 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0
+				    local w = table.create(80)
+				    for off = 1, #padded, 64 do
+					for i = 1, 16 do
+					    w[i] = string.unpack(">I4", padded, off + (i - 1) * 4)
+					end
+					for i = 17, 80 do
+					    w[i] = bit32.rrotate(bit32.bxor(bit32.bxor(w[i-3], w[i-8]), bit32.bxor(w[i-14], w[i-16])), 1)
+					end
+					local a, b, c, d, e = h0, h1, h2, h3, h4
+					for i = 1, 80 do
+					    local f, k
+					    if i <= 20 then
+						f = bit32.bor(bit32.band(b, c), bit32.band(bit32.bnot(b), d)); k = 0x5A827999
+					    elseif i <= 40 then
+						f = bit32.bxor(bit32.bxor(b, c), d); k = 0x6ED9EBA1
+					    elseif i <= 60 then
+						f = bit32.bor(bit32.bor(bit32.band(b, c), bit32.band(b, d)), bit32.band(c, d)); k = 0x8F1BBCDC
+					    else
+						f = bit32.bxor(bit32.bxor(b, c), d); k = 0xCA62C1D6
+					    end
+					    local temp = (bit32.rrotate(a, 5) + f + e + k + w[i]) % 0x100000000
+					    e = d; d = c; c = bit32.rrotate(b, 30); b = a; a = temp
+					end
+					h0 = (h0 + a) % 0x100000000
+					h1 = (h1 + b) % 0x100000000
+					h2 = (h2 + c) % 0x100000000
+					h3 = (h3 + d) % 0x100000000
+					h4 = (h4 + e) % 0x100000000
+				    end
+				    return string.format("%08x%08x%08x%08x%08x", h0, h1, h2, h3, h4)
+				end
+
+				local skB64Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+				local skB64Lookup = {}
+				for i = 1, #skB64Alphabet do skB64Lookup[skB64Alphabet:sub(i, i)] = i - 1 end
+				local function skBase64Decode(s)
+				    if type(s) ~= "string" then return "" end
+				    s = s:gsub("=+$", ""):gsub("[^%w%+%/]", "")
+				    local out = {}
+				    local i = 1
+				    while i <= #s do
+					local rem = #s - i + 1
+					local a = skB64Lookup[s:sub(i, i)] or 0
+					local b = skB64Lookup[s:sub(i + 1, i + 1)] or 0
+					if rem >= 4 then
+					    local c = skB64Lookup[s:sub(i + 2, i + 2)] or 0
+					    local d = skB64Lookup[s:sub(i + 3, i + 3)] or 0
+					    local n = a * 262144 + b * 4096 + c * 64 + d
+					    out[#out + 1] = string.char(math.floor(n / 65536) % 256, math.floor(n / 256) % 256, n % 256)
+					elseif rem == 3 then
+					    local c = skB64Lookup[s:sub(i + 2, i + 2)] or 0
+					    local n = a * 4096 + b * 64 + c
+					    out[#out + 1] = string.char(math.floor(n / 65536) % 256, math.floor(n / 256) % 256)
+					elseif rem == 2 then
+					    local n = a * 64 + b
+					    out[#out + 1] = string.char(math.floor(n / 256) % 256)
+					else
+					    break
+					end
+					i = i + 4
+				    end
+				    return table.concat(out)
+				end
+
+				-- ===== the window (target hud look) =====
+				local SPOTIFY_W, SPOTIFY_H = 202, 84
+				local spotifyGui = Instance.new("ScreenGui")
+				spotifyGui.Name = "SKSpotifyPlayer"
+				spotifyGui.ResetOnSpawn = false
+				spotifyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+				spotifyGui.DisplayOrder = 5
+				spotifyGui.Enabled = false
+				spotifyGui.Parent = skGuiParent
+
+				local spotifyFrame = Instance.new("Frame")
+				spotifyFrame.Name = "Spotify"
+				spotifyFrame.AnchorPoint = Vector2.new(1, 0)
+				spotifyFrame.Position = UDim2.new(1, -16, 0, 40)
+				spotifyFrame.Size = UDim2.new(0, SPOTIFY_W, 0, SPOTIFY_H)
+				spotifyFrame.BackgroundColor3 = themes.preset.outline
+				spotifyFrame.BorderSizePixel = 0
+				spotifyFrame.Parent = spotifyGui
+				library:apply_theme(spotifyFrame, "outline", "BackgroundColor3")
+
+				local spAccent = Instance.new("Frame")
+				spAccent.Position = UDim2.new(0, 1, 0, 1)
+				spAccent.Size = UDim2.new(1, -2, 1, -2)
+				spAccent.BackgroundColor3 = themes.preset.accent
+				spAccent.BorderSizePixel = 0
+				spAccent.Parent = spotifyFrame
+				library:apply_theme(spAccent, "accent", "BackgroundColor3")
+
+				local spBody = Instance.new("Frame")
+				spBody.Position = UDim2.new(0, 1, 0, 1)
+				spBody.Size = UDim2.new(1, -2, 1, -2)
+				spBody.BackgroundColor3 = themes.preset.high_contrast
+				spBody.BorderSizePixel = 0
+				spBody.Parent = spAccent
+
+				local function skLabel(text, textSize, color, xAlign)
+				    local lbl = Instance.new("TextLabel")
+				    lbl.Text = text
+				    lbl.FontFace = library.font
+				    lbl.TextSize = textSize
+				    lbl.TextColor3 = color
+				    lbl.BackgroundTransparency = 1
+				    lbl.BorderSizePixel = 0
+				    lbl.TextXAlignment = xAlign or Enum.TextXAlignment.Left
+				    lbl.TextTruncate = Enum.TextTruncate.AtEnd
+				    lbl.Size = UDim2.new(1, 0, 1, 0)
+				    lbl.Parent = nil
+				    local stroke = Instance.new("UIStroke")
+				    stroke.Color = themes.preset.text_outline
+				    stroke.LineJoinMode = Enum.LineJoinMode.Miter
+				    stroke.Parent = lbl
+				    library:apply_theme(stroke, "text_outline", "Color")
+				    return lbl
+				end
+
+				local spHeader = skLabel("spotify", 13, Color3.fromRGB(255, 255, 255))
+				spHeader.Position = UDim2.new(0, 0, 0, 2)
+				spHeader.Size = UDim2.new(1, 0, 0, 16)
+				spHeader.Parent = spBody
+				local spHeaderPad = Instance.new("UIPadding")
+				spHeaderPad.PaddingLeft = UDim.new(0, 4)
+				spHeaderPad.Parent = spHeader
+
+				local spTitle = skLabel("not playing", 13, Color3.fromRGB(255, 255, 255))
+				spTitle.Position = UDim2.new(0, 6, 0, 19)
+				spTitle.Size = UDim2.new(1, -12, 0, 15)
+				spTitle.Parent = spBody
+
+				local spArtist = skLabel("", 11, Color3.fromRGB(170, 170, 170))
+				spArtist.Position = UDim2.new(0, 7, 0, 34)
+				spArtist.Size = UDim2.new(1, -13, 0, 12)
+				spArtist.Parent = spBody
+
+				-- the progress bar: health-bar style, NOT rounded
+				local spBarOuter = Instance.new("Frame")
+				spBarOuter.Position = UDim2.new(0, 7, 0, 50)
+				spBarOuter.Size = UDim2.new(1, -14, 0, 8)
+				spBarOuter.BackgroundColor3 = themes.preset.outline
+				spBarOuter.BorderSizePixel = 0
+				spBarOuter.Parent = spBody
+				library:apply_theme(spBarOuter, "outline", "BackgroundColor3")
+
+				local spBarInline = Instance.new("Frame")
+				spBarInline.Position = UDim2.new(0, 1, 0, 1)
+				spBarInline.Size = UDim2.new(1, -2, 1, -2)
+				spBarInline.BackgroundColor3 = themes.preset.outline
+				spBarInline.BorderSizePixel = 0
+				spBarInline.Parent = spBarOuter
+				library:apply_theme(spBarInline, "outline", "BackgroundColor3")
+
+				local spBarTrack = Instance.new("Frame")
+				spBarTrack.Position = UDim2.new(0, 1, 0, 1)
+				spBarTrack.Size = UDim2.new(1, -2, 1, -2)
+				spBarTrack.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				spBarTrack.BorderSizePixel = 0
+				spBarTrack.Parent = spBarInline
+				local spTrackGrad = Instance.new("UIGradient")
+				spTrackGrad.Rotation = 90
+				spTrackGrad.Color = ColorSequence.new(themes.preset.low_contrast, themes.preset.high_contrast)
+				spTrackGrad.Parent = spBarTrack
+				library:apply_theme(spTrackGrad, "contrast", "Color")
+
+				local spBarFill = Instance.new("Frame")
+				spBarFill.Size = UDim2.fromScale(0, 1)
+				spBarFill.BackgroundColor3 = themes.preset.accent
+				spBarFill.BorderSizePixel = 0
+				spBarFill.Parent = spBarTrack
+				library:apply_theme(spBarFill, "accent", "BackgroundColor3")
+				local spFillGrad = Instance.new("UIGradient")
+				spFillGrad.Rotation = 90
+				spFillGrad.Color = ColorSequence.new({
+				    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+				    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(190, 190, 190)),
+				    ColorSequenceKeypoint.new(1, Color3.fromRGB(125, 125, 125)),
+				})
+				spFillGrad.Parent = spBarFill
+
+				local spTimeCur = skLabel("0:00", 10, Color3.fromRGB(180, 180, 180))
+				spTimeCur.Position = UDim2.new(0, 7, 0, 60)
+				spTimeCur.Size = UDim2.new(0, 80, 0, 12)
+				spTimeCur.Parent = spBody
+
+				local spTimeLen = skLabel("0:00", 10, Color3.fromRGB(180, 180, 180), Enum.TextXAlignment.Right)
+				spTimeLen.AnchorPoint = Vector2.new(1, 0)
+				spTimeLen.Position = UDim2.new(1, -7, 0, 60)
+				spTimeLen.Size = UDim2.new(0, 80, 0, 12)
+				spTimeLen.Parent = spBody
+
+				-- drag + saved position
+				local spPosFile = dir .. "/spotify_pos.txt"
+				local function spApplyPos(x, y)
+				    spotifyFrame.AnchorPoint = Vector2.new(0, 0)
+				    spotifyFrame.Position = UDim2.new(0, x, 0, y)
+				end
+				pcall(function()
+				    if type(isfile) == "function" and type(readfile) == "function" and isfile(spPosFile) then
+					local d = httpService:JSONDecode(readfile(spPosFile))
+					if type(d.x) == "number" and type(d.y) == "number" then
+					    spApplyPos(d.x, d.y)
+					end
+				    end
+				end)
+				do
+				    local dragging, dragStart, startPos = false, nil, nil
+				    spotifyFrame.Active = true
+				    spotifyFrame.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					    dragging = true
+					    dragStart = uis:GetMouseLocation()
+					    local ap = spotifyFrame.AbsolutePosition
+					    startPos = Vector2.new(ap.X, ap.Y)
+					end
+				    end)
+				    uis.InputChanged:Connect(function(input)
+					if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+					    local mouse = uis:GetMouseLocation()
+					    local vp = camera.ViewportSize
+					    local x = math.clamp(startPos.X + (mouse.X - dragStart.X), 0, math.max(0, vp.X - SPOTIFY_W))
+					    local y = math.clamp(startPos.Y + (mouse.Y - dragStart.Y), 0, math.max(0, vp.Y - SPOTIFY_H))
+					    spApplyPos(x, y)
+					end
+				    end)
+				    uis.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
+					    dragging = false
+					    pcall(function()
+						if type(writefile) == "function" then
+						    local ap = spotifyFrame.AbsolutePosition
+						    writefile(spPosFile, httpService:JSONEncode({ x = math.floor(ap.X), y = math.floor(ap.Y) }))
+						end
+					    end)
+					end
+				    end)
+				end
+
+				-- ===== the engine (vape V4 Render/Spotify.lua) =====
+				local function fmtTime(t)
+				    t = math.max(tonumber(t) or 0, 0)
+				    return string.format("%d:%02d", math.floor(t / 60), math.floor(t % 60))
+				end
+
+				local function safeRequest(...)
+				    local success, req = pcall(skRequestFn, ...)
+				    if success then return req end
+				    return { Success = false, Body = tostring(req) }
+				end
+
+				local SpotifyHandler = { Cache = {}, active = false }
+
+				do
+				    local BLOCK_SIZE = 64
+				    local xor_with_0x5c, xor_with_0x36 = {}, {}
+				    for i = 0, 255 do
+					xor_with_0x5c[string.char(i)] = string.char(bit32.bxor(0x5c, i))
+					xor_with_0x36[string.char(i)] = string.char(bit32.bxor(0x36, i))
+				    end
+
+				    local function numberToByteString(number)
+					local bytes = {}
+					while number ~= 0 do
+					    table.insert(bytes, string.char(bit32.band(number, 0xff)))
+					    number = bit32.rshift(number, 8)
+					end
+					return string.rep('\0', math.max(0, 8 - #bytes)) .. table.concat(bytes, ''):reverse()
+				    end
+
+				    local function randomHexString()
+					local data = table.create(20)
+					for i = 1, 20 do
+					    data[i] = string.format('%02x', math.random(0, 255))
+					end
+					return table.concat(data)
+				    end
+
+				    local function hex_to_binary(hex)
+					return (hex:gsub('..', function(num)
+					    return string.char(tonumber(num, 16))
+					end))
+				    end
+
+				    local function hmac(key, text)
+					if #key > BLOCK_SIZE then
+					    key = hex_to_binary(skSha1(key))
+					end
+					local key_xord_with_0x36 = key:gsub('.', xor_with_0x36) .. string.rep(string.char(0x36), BLOCK_SIZE - #key)
+					local key_xord_with_0x5c = key:gsub('.', xor_with_0x5c) .. string.rep(string.char(0x5c), BLOCK_SIZE - #key)
+					return hex_to_binary(skSha1(key_xord_with_0x5c .. hex_to_binary(skSha1(key_xord_with_0x36 .. text))))
+				    end
+
+				    local function stringToBytes(str)
+					local bytes = table.create(#str)
+					for i = 1, #str do
+					    bytes[i] = string.byte(str:sub(i, i))
+					end
+					return bytes
+				    end
+
+				    function SpotifyHandler.generateOTP(input, secret)
+					local hash = hmac(secret, numberToByteString(input))
+					local offset = bit32.band(string.byte(hash:sub(-1, -1)), 0x0f) + 1
+					local bHash = stringToBytes(hash)
+					local code = bit32.bor(
+					    bit32.lshift(bit32.band(bHash[offset], 0x7f), 24),
+					    bit32.lshift(bit32.band(bHash[offset + 1], 0xff), 16),
+					    bit32.lshift(bit32.band(bHash[offset + 2], 0xff), 8),
+					    bit32.band(bHash[offset + 3], 0xff)
+					)
+					local str_code = tostring(math.floor(code % (10 ^ 6)))
+					while #str_code < 6 do str_code = '0' .. str_code end
+					return str_code
+				    end
+
+				    function SpotifyHandler.readURLAndConfig(code)
+					local appCfg = code:find('appServerConfig\" type=\"text\/plain\">')
+					return code:match('(https://[^"\']+/web%-player%.[0-9a-f]+%.js)'),
+					    appCfg and httpService:JSONDecode(skBase64Decode(code:sub(appCfg + 35, code:find('<', appCfg + 1) - 1))) or nil
+				    end
+
+				    function SpotifyHandler.readOTPCodes(code)
+					local secret = code:find("{secret:'")
+					if secret then
+					    local version = code:find('%,version', secret + 1)
+					    local endbracket = code:find('}', version + 1)
+					    local otpCode = code:sub(secret + 9, version - 2)
+					    local hashedOtp = table.create(#otpCode)
+					    for i = 1, #otpCode do
+						hashedOtp[i] = bit32.bxor(string.byte(otpCode:sub(i, i)), (i - 1) % 33 + 9)
+					    end
+					    return table.concat(hashedOtp, ''), tonumber(code:sub(version + 9, endbracket - 1))
+					end
+				    end
+
+				    function SpotifyHandler.readFetchHash(code)
+					local query = code:find('fetchEntitiesForRecentlyPlayed","query",')
+					local ending = code:find('",null', query)
+					return query and ending and code:sub(query + 41, ending - 1)
+				    end
+				end
+
+				function SpotifyHandler:Callback(data)
+				    if data.player_state then
+					local currentTime = (data.timestamp / 1000)
+					local posAsTime = tonumber(data.player_state.position_as_of_timestamp) / 1000
+					local diff = currentTime - (tonumber(data.player_state.timestamp) / 1000)
+					self.playPosition = posAsTime + (data.player_state.is_paused and 0 or diff)
+					self.playRate = data.player_state.playback_speed
+					self.playDuration = tonumber(data.player_state.duration or 1000) / 1000
+					if data.player_state.track then
+					    self:RequestCache(data.player_state.track.uri, data.player_state.track)
+					    self.track = data.player_state.track.uri
+					    spTitle.Text = data.player_state.track.metadata.title
+						or (self.Cache[self.track] and self.Cache[self.track].Title) or "unknown"
+					    spArtist.Text = (self.Cache[self.track] and table.concat(self.Cache[self.track].Artists, ', ')) or ""
+					end
+				    end
+				end
+
+				function SpotifyHandler:Refresh()
+				    local mainPage = safeRequest({
+					Url = 'https://open.spotify.com',
+					Method = 'GET',
+					Headers = self.Headers
+				    })
+				    if mainPage.Success then
+					local scriptUrl, appCfg = self.readURLAndConfig(mainPage.Body)
+					if scriptUrl and appCfg then
+					    local scriptCode = safeRequest({
+						Url = scriptUrl,
+						Method = 'GET',
+						Headers = self.Headers
+					    })
+					    if scriptCode.Success then
+						local fetchKey = self.readFetchHash(scriptCode.Body)
+						local otpCode, version = self.readOTPCodes(scriptCode.Body)
+						if otpCode and version then
+						    local localKey = self.generateOTP(os.time() // 30, otpCode)
+						    local serverKey = self.generateOTP(appCfg.serverTime // 30, otpCode)
+						    local authData = safeRequest({
+							Url = 'https://open.spotify.com/api/token?reason=init&productType=web-player&totp=' .. localKey .. '&totpServer=' .. serverKey .. '&totpVer=' .. version,
+							Method = 'GET',
+							Headers = self.Headers
+						    })
+						    if authData.Success then
+							authData = httpService:JSONDecode(authData.Body)
+							return {
+							    clientId = authData.clientId,
+							    clientVersion = appCfg.clientVersion,
+							    correlationId = appCfg.correlationId,
+							    fetchKey = fetchKey,
+							    accessToken = authData.accessToken,
+							    expireTime = authData.accessTokenExpirationTimestampMs / 1000
+							}
+						    else
+							error('Failed to get auth data: ' .. tostring(authData.Body))
+						    end
+						else
+						    error('Failed to get OTP codes')
+						end
+					    else
+						error('Failed to get script data: ' .. tostring(scriptCode.Body))
+					    end
+					else
+					    error('Failed to get script url or app config.')
+					end
+				    else
+					error('Failed to get main page: ' .. tostring(mainPage.Body))
+				    end
+				end
+
+				function SpotifyHandler:GetSession()
+				    local sessionData = safeRequest({
+					Url = 'https://clienttoken.spotify.com/v1/clienttoken',
+					Method = 'POST',
+					Headers = {
+					    Accept = 'application/json',
+					    ['Content-Type'] = 'application/json',
+					    Origin = 'https://open.spotify.com',
+					    Referer = 'https://open.spotify.com/',
+					    ['User-Agent'] = self.Headers['User-Agent']
+					},
+					Body = httpService:JSONEncode({
+					    client_data = {
+						client_id = self.Data.clientId,
+						client_version = self.Data.clientVersion,
+						js_sdk_data = {
+						    device_brand = 'unknown',
+						    device_id = self.Data.correlationId,
+						    device_model = 'unknown',
+						    device_type = 'computer',
+						    os = 'windows',
+						    os_version = 'NT 10.0'
+						}
+					    }
+					})
+				    })
+				    if sessionData.Success then
+					sessionData = httpService:JSONDecode(sessionData.Body)
+					return sessionData.granted_token.token
+				    else
+					error('Failed to get device session: ' .. tostring(sessionData.Body))
+				    end
+				end
+
+				function SpotifyHandler:RequestCache(id, data)
+				    if not self.Cache[id] then
+					self.Cache[id] = { Artists = { 'None' }, Title = 'Unknown' }
+					if id:find('spotify:local') then
+					    local lArtist = data.metadata.artist_uri:sub(15)
+					    self.Cache[id].Artists = { lArtist ~= '' and lArtist or 'None' }
+					    spArtist.Text = table.concat(self.Cache[id].Artists, ', ')
+					    return
+					end
+					if self.Data.fetchKey then
+					    task.spawn(function()
+						local dataRequest = safeRequest({
+						    Url = 'https://api-partner.spotify.com/pathfinder/v2/query',
+						    Method = 'POST',
+						    Headers = {
+							Accept = 'application/json',
+							Authorization = 'Bearer ' .. self.Data.accessToken,
+							['Content-Type'] = 'application/json',
+							['client-token'] = self.clientToken,
+							Origin = 'https://open.spotify.com',
+							Referer = 'https://open.spotify.com/',
+							['User-Agent'] = self.Headers['User-Agent']
+						    },
+						    Body = httpService:JSONEncode({
+							extensions = {
+							    persistedQuery = {
+								sha256Hash = self.Data.fetchKey,
+								version = 1
+							    }
+							},
+							variables = {
+							    uris = { id }
+							},
+							operationName = 'fetchEntitiesForRecentlyPlayed'
+						    })
+						})
+						if dataRequest.Success then
+						    local okD, data2 = pcall(httpService.JSONDecode, httpService, dataRequest.Body)
+						    if okD and data2 and data2.data and data2.data.lookup then
+							local track = data2.data.lookup[1]
+							if track and track.data then
+							    table.clear(self.Cache[id].Artists)
+							    if track.data.__typename == 'Track' then
+								self.Cache[id].Title = track.data.name
+								for _, artist in ipairs(track.data.artists.items) do
+								    table.insert(self.Cache[id].Artists, artist.profile.name)
+								end
+							    elseif track.data.__typename == 'Episode' then
+								table.insert(self.Cache[id].Artists, track.data.podcastV2.data.publisher.name)
+							    end
+							    if self.track == id then
+								spTitle.Text = self.Cache[id].Title
+								spArtist.Text = table.concat(self.Cache[id].Artists, ', ')
+							    end
+							end
+						    end
+						end
+					    end)
+					end
+				    end
+				end
+
+				function SpotifyHandler:RegisterDevice(connectionId)
+				    if not self.connectionId then
+					self.connectionId = connectionId
+					local sessionId = randomHexString()
+					local deviceReq = safeRequest({
+					    Url = 'https://' .. self.Dealer.Client .. '/track-playback/v1/devices',
+					    Method = 'POST',
+					    Headers = {
+						Authorization = 'Bearer ' .. self.Data.accessToken,
+						['Content-Type'] = 'application/json',
+						['client-token'] = self.clientToken,
+						Origin = 'https://open.spotify.com',
+						Referer = 'https://open.spotify.com/',
+						['User-Agent'] = self.Headers['User-Agent']
+					    },
+					    Body = httpService:JSONEncode({
+						device = {
+						    brand = 'spotify',
+						    capabilities = {
+							change_volume = true,
+							enable_play_token = true,
+							supports_file_media_type = true,
+							play_token_lost_behavior = 'pause',
+							disable_connect = false,
+							audio_podcasts = true,
+							video_playback = true,
+							manifest_formats = {
+							    'file_ids_mp3',
+							    'file_urls_mp3',
+							    'manifest_urls_audio_ad',
+							    'manifest_ids_video',
+							    'file_urls_external',
+							    'file_ids_mp4',
+							    'file_ids_mp4_dual',
+							    'manifest_urls_audio_ad'
+							},
+							supports_preferred_media_type = true,
+							supports_playback_offsets = true,
+							supports_playback_speed = true
+						    },
+						    device_id = sessionId,
+						    device_type = 'computer',
+						    metadata = {},
+						    model = 'web_player',
+						    name = 'Web Player (Firefox)',
+						    platform_identifier = 'web_player windows 10;firefox 158.0;desktop',
+						    is_group = false,
+						    is_public = false,
+						    correlation_id = self.Data.correlationId,
+						    client_version = 'harmony:4.81.1-1f3d48b7f'
+						},
+						outro_endcontent_snooping = false,
+						connection_id = self.connectionId,
+						client_version = 'harmony:4.81.1-1f3d48b7f',
+						volume = 65535
+					    }):gsub('"metadata":%[%]', '"metadata":{}')
+					})
+					if deviceReq.Success then
+					    local registerReq = safeRequest({
+						Url = 'https://' .. self.Dealer.Client .. '/connect-state/v1/devices/hobs_' .. sessionId,
+						Method = 'PUT',
+						Headers = {
+						    Accept = 'application/json',
+						    Authorization = 'Bearer ' .. self.Data.accessToken,
+						    ['client-token'] = self.clientToken,
+						    Origin = 'https://open.spotify.com',
+						    Referer = 'https://open.spotify.com/',
+						    ['x-spotify-connection-id'] = self.connectionId,
+						    ['User-Agent'] = self.Headers['User-Agent']
+						},
+						Body = httpService:JSONEncode({
+						    member_type = 'CONNECT_STATE',
+						    device = {
+							device_info = {
+							    capabilities = {
+								can_be_player = false,
+								hidden = true,
+								needs_full_player_state = true
+							    }
+							}
+						    }
+						})
+					    })
+					    if registerReq.Success then
+						local okR, regData = pcall(httpService.JSONDecode, httpService, registerReq.Body)
+						if okR and regData then
+						    self:Callback(regData)
+						end
+					    else
+						library:notification({text = 'Spotify: Failed to register device: ' .. tostring(registerReq.Body), time = 30})
+					    end
+					else
+					    library:notification({text = 'Spotify: Failed to register device: ' .. tostring(deviceReq.Body), time = 30})
+					end
+				    end
+				end
+
+				function SpotifyHandler:RegisterSocket()
+				    if not self.Dealer then
+					local dealerReq = safeRequest({
+					    Url = 'https://apresolve.spotify.com/?type=dealer-g2&type=spclient',
+					    Method = 'GET',
+					    Headers = {
+						Origin = 'https://open.spotify.com',
+						Referer = 'https://open.spotify.com/',
+						['User-Agent'] = self.Headers['User-Agent']
+					    }
+					})
+					if dealerReq.Success then
+					    local okD, dealerData = pcall(httpService.JSONDecode, httpService, dealerReq.Body)
+					    if okD and dealerData and dealerData['dealer-g2'] and dealerData['dealer-g2'][1]
+						and dealerData.spclient and dealerData.spclient[1] then
+						self.Dealer = {
+						    Dealer = dealerData['dealer-g2'][1]:sub(1, dealerData['dealer-g2'][1]:find(':') - 1),
+						    Client = dealerData.spclient[1]:sub(1, dealerData.spclient[1]:find(':') - 1)
+						}
+					    else
+						library:notification({text = 'Spotify: No available dealers', time = 30})
+						return
+					    end
+					else
+					    library:notification({text = 'Spotify: Failed to get dealers: ' .. tostring(dealerReq.Body), time = 30})
+					    return
+					end
+				    end
+				    self.Socket = wsConnect('wss://' .. self.Dealer.Dealer .. '/?access_token=' .. self.Data.accessToken)
+				    self.syncTime = os.clock() - 6
+				    self.Socket.OnMessage:Connect(function(payload)
+					local okP, data = pcall(httpService.JSONDecode, httpService, payload)
+					if not okP or type(data) ~= "table" then return end
+					if data.headers and data.headers['Spotify-Connection-Id'] then
+					    self.syncTime = nil
+					    self:RegisterDevice(data.headers['Spotify-Connection-Id'])
+					elseif data.payloads and #data.payloads > 0 then
+					    for _, pd in ipairs(data.payloads) do
+						if pd.cluster and pd.cluster.player_state then
+						    self:Callback(pd.cluster)
+						    break
+						end
+					    end
+					elseif data.type == 'pong' then
+					    self.syncTime = nil
+					end
+				    end)
+				    self.Socket.OnClose:Connect(function()
+					self.connectionId = nil
+					self.syncTime = nil
+					self.Socket = nil
+				    end)
+				end
+
+				function SpotifyHandler:Start()
+				    if self._starting then return end
+				    self._starting = true
+				    local function done() self._starting = false end
+				    if not self.active then done() return end
+				    local cookiePath = dir .. "/spotify.txt"
+				    if type(isfile) ~= "function" or not isfile(cookiePath) then
+					library:notification({text = 'Spotify: Missing cookie! (dump the sp_dc cookie from the browser and write it to ' .. cookiePath .. ')', time = 30})
+					done()
+					return
+				    end
+				    local cookie = readfile(cookiePath)
+				    cookie = cookie:gsub('^%s+', ''):gsub('%s+$', '')
+				    self.Headers = {
+					Cookie = 'sp_dc=' .. cookie .. ';',
+					['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0'
+				    }
+				    local dataPath = dir .. "/spotifydata.txt"
+				    local data = nil
+				    if type(isfile) == "function" and isfile(dataPath) then
+					pcall(function()
+					    data = httpService:JSONDecode(readfile(dataPath))
+					end)
+					if type(data) ~= "table" then data = nil end
+				    end
+				    if not (data and data.expireTime and data.expireTime > os.time()) then
+					library:notification({text = 'Spotify: Authenticating...', time = 10})
+					local success, res = pcall(function()
+					    return self:Refresh()
+					end)
+					if not success then
+					    library:notification({text = 'Spotify: ' .. tostring(res), time = 10})
+					    done()
+					    return
+					end
+					data = res
+					library:notification({text = 'Spotify: Logged in!', time = 10})
+					pcall(function()
+					    if type(writefile) == "function" then
+						writefile(dataPath, httpService:JSONEncode(data))
+					    end
+					end)
+				    end
+				    self.Data = data
+				    if not self.clientToken then
+					local success, deviceToken = pcall(function()
+					    return self:GetSession()
+					end)
+					if not success then
+					    library:notification({text = 'Spotify: ' .. tostring(deviceToken), time = 10})
+					    done()
+					    return
+					end
+					self.clientToken = deviceToken
+				    end
+				    self:RegisterSocket()
+				    local pingCooldown = os.clock() + 30
+				    while self.active do
+					local delta = task.wait(0.1)
+					if not self.active then break end
+					if self.Socket then
+					    if self.syncTime and (os.clock() - self.syncTime) > 10 then
+						pingCooldown = os.clock() + 30
+						self.Socket:Close()
+						self.Socket.OnClose:Wait()
+						if not self.active then break end
+						self:RegisterSocket()
+					    elseif pingCooldown < os.clock() then
+						pcall(function() self.Socket:Send('{"type":"ping"}') end)
+						self.syncTime = os.clock()
+						pingCooldown = os.clock() + 30
+					    end
+					    if self.playPosition then
+						self.playPosition = math.clamp(
+						    self.playPosition + (delta * (self.playRate or 1)),
+						    0.01, self.playDuration or 1
+						)
+						spTimeCur.Text = fmtTime(self.playPosition)
+						spTimeLen.Text = fmtTime(self.playDuration or 0)
+						spBarFill.Size = UDim2.fromScale(
+						    self.playPosition / math.max(self.playDuration or 1, 0.01), 1
+						)
+					    end
+					end
+				    end
+				    done()
+				end
+
+				library.spotify_player = {}
+				function library.spotify_player.toggle()
+				    if SpotifyHandler.active then
+					SpotifyHandler.active = false
+					if SpotifyHandler.Socket then
+					    pcall(function() SpotifyHandler.Socket:Close() end)
+					end
+					SpotifyHandler.Socket = nil
+					SpotifyHandler.connectionId = nil
+					spotifyGui.Enabled = false
+					spTitle.Text = "not playing"
+					spArtist.Text = ""
+					spTimeCur.Text = "0:00"
+					spTimeLen.Text = "0:00"
+					spBarFill.Size = UDim2.fromScale(0, 1)
+				    else
+					SpotifyHandler.active = true
+					spotifyGui.Enabled = true
+					spTitle.Text = "connecting..."
+					spArtist.Text = ""
+					task.spawn(function()
+					    pcall(function() SpotifyHandler:Start() end)
+					end)
+				    end
+				end
+			    end
+			end
+			--
 
 			return setmetatable(window, library)
 		end
