@@ -3517,7 +3517,11 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						local charPos = Vector3.new(0, 2, -6)
+						-- round 11: the body moves DOWN (was y 2 - the body
+						-- sat high and clipped the top of the viewport; y 0
+						-- centers it), the esp overlay follows (dynamic box
+						-- wraps it, the static box is centered on it)
+						local charPos = Vector3.new(0, 0, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
 						items.camera.CFrame = cfr(Vector3.new(0, 0, 0), Vector3.new(0, 0, -6))
 						
@@ -3621,21 +3625,64 @@ end)
 					LineJoinMode = Enum.LineJoinMode.Miter
 				});
 				
+				-- round 7/11: top row holder - the name and the team flag sit side
+				-- by side above the box ("name (IN)"), exactly like the real ESP
+				-- renderer (its TeamFlag sits right of the name since round 4)
+				objects[ "top_holder" ] = library:create( "Frame" , {
+					Parent = objects[ "holder" ];
+					BackgroundTransparency = 1;
+					AnchorPoint = vec2(0.5, 1);
+					Position = dim2(0.5, 0, 0, -5);
+					Size = dim2(0, 0, 0, 0);
+					AutomaticSize = Enum.AutomaticSize.XY;
+					BorderSizePixel = 0;
+					BackgroundColor3 = rgb(255, 255, 255)
+				});
+				library:create( "UIListLayout" , {
+					Parent = objects[ "top_holder" ];
+					FillDirection = Enum.FillDirection.Horizontal;
+					HorizontalAlignment = Enum.HorizontalAlignment.Center;
+					VerticalAlignment = Enum.VerticalAlignment.Bottom;
+					SortOrder = Enum.SortOrder.LayoutOrder;
+					Padding = UDim.new(0, 3)
+				});
+				-- round 11: the name text honors the NameMode ("user" = the
+				-- @username, "display" = the display name) - refresh_elements
+				-- keeps it in sync with the dropdown
 				objects[ "name" ] = library:create( "TextLabel" , {
 					FontFace = library.font;
-					Parent = objects[ "holder" ];
+					Parent = objects[ "top_holder" ];
+					LayoutOrder = 1;
 					TextColor3 = flag_color("esp_name_color");
 					BorderColor3 = rgb(0, 0, 0);
-					Text = string.format("%s (@%s)", lp.DisplayName or lp.Name, lp.Name);
+					Text = lp.Name;
 					Name = "\0";
 					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(0.5, 1);
-					Size = dim2(1, 0, 0, 0);
+					AnchorPoint = vec2(0, 0);
+					Size = dim2(0, 0, 0, 0);
 					BackgroundTransparency = 1;
-					Position = dim2(0.5, 0, 0, -5);
+					Position = dim2(0, 0, 0, 0);
 					BorderSizePixel = 0;
-					AutomaticSize = Enum.AutomaticSize.Y;
+					AutomaticSize = Enum.AutomaticSize.XY;
 					TextSize = 14;
+				});
+
+				-- round 7/11: team flag lives in the top row, DIRECTLY after the
+				-- name (same order as the esp renderer: name, then team flag)
+				objects[ "team_flag" ] = library:create( "TextLabel" , {
+					FontFace = library.font;
+					Parent = objects[ "top_holder" ];
+					LayoutOrder = 2;
+					TextColor3 = rgb(255, 200, 100);
+					Text = "(IN)";
+					TextStrokeTransparency = 0;
+					AnchorPoint = vec2(0, 0);
+					AutomaticSize = Enum.AutomaticSize.XY;
+					BackgroundTransparency = 1;
+					Position = dim2(0, 0, 0, 0);
+					BorderSizePixel = 0;
+					TextSize = 12;
+					TextXAlignment = Enum.TextXAlignment.Left;
 				});
 				
 				objects[ "box_handler" ] = library:create( "Frame" , {
@@ -3767,21 +3814,6 @@ end)
 					AutomaticSize = Enum.AutomaticSize.XY;
 					BackgroundTransparency = 1;
 					Position = dim2(1, 5, 0, 0);
-					BorderSizePixel = 0;
-					TextSize = 12;
-					TextXAlignment = Enum.TextXAlignment.Left;
-				});
-				
-				objects[ "team_flag" ] = library:create( "TextLabel" , {
-					FontFace = library.font;
-					Parent = objects[ "holder" ];
-					TextColor3 = rgb(255, 200, 100);
-					Text = "Inmates";
-					TextStrokeTransparency = 0;
-					AnchorPoint = vec2(0, 0);
-					AutomaticSize = Enum.AutomaticSize.XY;
-					BackgroundTransparency = 1;
-					Position = dim2(1, 5, 0, 14);
 					BorderSizePixel = 0;
 					TextSize = 12;
 					TextXAlignment = Enum.TextXAlignment.Left;
@@ -4031,11 +4063,21 @@ end)
 				local fontFace = (st and st.ESPFont) or library.font
 				safe_set_parent(objects.holder, flag_bool("esp_enabled") and items.viewportframe or library.cache)
 
+				-- round 7: the name lives in the top row holder (team flag right of it)
+				objects["top_holder"].Visible = flag_bool("esp_names") or flag_bool("esp_team_flag")
+				safe_set_parent(objects["top_holder"], (flag_bool("esp_names") or flag_bool("esp_team_flag")) and objects["holder"] or library.cache)
 				objects["name"].Visible = flag_bool("esp_names")
-				safe_set_parent(objects["name"], flag_bool("esp_names") and objects["holder"] or library.cache)
+				safe_set_parent(objects["name"], flag_bool("esp_names") and objects["top_holder"] or library.cache)
 				objects["name"].TextColor3 = flag_color("esp_name_color")
 				objects["name"].TextSize = textSize
 				if objects["name"].FontFace then objects["name"].FontFace = fontFace end
+				-- round 11: the name mode - "user" shows lp.Name (hoxjjj),
+				-- "display" shows lp.DisplayName (abc123); same dropdown as the
+				-- real ESP (Settings.NameMode, set by the ESP -> Settings
+				-- "Name" dropdown)
+				local nmSt = get_settings and get_settings()
+				objects["name"].Text = (nmSt and nmSt.NameMode == "display")
+					and (lp.DisplayName or lp.Name) or lp.Name
 
 				objects["distance"].Visible = flag_bool("esp_distance")
 				safe_set_parent(objects["distance"], flag_bool("esp_distance") and objects["holder"] or library.cache)
@@ -4086,15 +4128,24 @@ end)
 				end
 
 				if flag_bool("esp_team_flag") then
-					objects["team_flag"].Visible = true
-					safe_set_parent(objects["team_flag"], objects["holder"])
-					objects["team_flag"].TextSize = math.max(8, textSize - 2)
-					objects["team_flag"].AnchorPoint = vec2(0, 0)
-					objects["team_flag"].Position = dim2(1, 5, 0, flagY)
-					objects["team_flag"].TextXAlignment = Enum.TextXAlignment.Left
-					if st and st.FlagTeamInmatesColor then
-						objects["team_flag"].TextColor3 = type(st.FlagTeamInmatesColor) == "table" and st.FlagTeamInmatesColor.Color or st.FlagTeamInmatesColor
+					-- round 7/11: "(GU)" / "(IN)" / "(CR)" DIRECTLY after the
+					-- name (same position as the esp renderer), real team code
+					-- + real team color (same as starkill's GetPlayerTeamFlag)
+					local teamCode = "?"
+					local teamCol = rgb(255, 200, 100)
+					local myTeam = lp.Team
+					if myTeam then
+						local tn = (myTeam.Name or ""):lower()
+						teamCode = (tn == "inmates" and "IN") or (tn == "guards" and "GU") or (tn == "criminals" and "CR") or ((myTeam.Name or ""):sub(1, 2):upper())
+						if myTeam.TeamColor then teamCol = myTeam.TeamColor.Color end
 					end
+					objects["team_flag"].Visible = true
+					safe_set_parent(objects["team_flag"], objects["top_holder"])
+					objects["team_flag"].Text = "(" .. teamCode .. ")"
+					objects["team_flag"].TextSize = textSize
+					objects["team_flag"].AnchorPoint = vec2(0, 0)
+					objects["team_flag"].TextXAlignment = Enum.TextXAlignment.Left
+					objects["team_flag"].TextColor3 = teamCol
 					if objects["team_flag"].FontFace then objects["team_flag"].FontFace = fontFace end
 				else
 					objects["team_flag"].Visible = false
@@ -7553,7 +7604,10 @@ end)
 					TextYAlignment = Enum.TextYAlignment.Top,
 					TextSize = 12,
 					BackgroundColor3 = rgb(255, 255, 255),
-					LayoutOrder = 0
+					-- round 11: the info row (LayoutOrder -1) goes ON TOP, the
+					-- search box stays at 0, the rows drop to 2 - the info box
+					-- can never slide below the list again
+					LayoutOrder = 2
 				})
 				
 				local UIPadding = library:create("UIPadding", {
@@ -7719,7 +7773,17 @@ end)
 
 				local teamOrder = get_team_sort_order(playerObj)
 				local nameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
-				local layoutOrder = (nameStr == lp.Name) and -1000000 or (teamOrder * 100000 + nameSort)
+				-- round 11: a UNIQUE integer base per player (team order +
+				-- name sort + a per-player id): the button gets base * 2 and
+				-- its line base * 2 + 1, so no two elements EVER share a
+				-- LayoutOrder - every row is always [row, line, row, line]
+				-- no matter who joins, leaves or switches teams
+				cfg._row_uid = (cfg._row_uid or 0) % 999 + 1
+				local rowUid = cfg._row_uid
+				path.uid = rowUid
+				local baseOrder = (nameStr == lp.Name) and -100000000
+					or (teamOrder * 100000000 + nameSort * 1000 + rowUid)
+				local layoutOrder = baseOrder * 2
 				local TextButton = library:create("TextButton", {
 					Parent = ScrollingFrame,
 					Name = "",
@@ -7802,7 +7866,9 @@ end)
 					Size = dim2(1, 0, 0, 1),
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline,
-					LayoutOrder = layoutOrder + 0.5
+					-- round 11: strictly between this row's button and the
+					-- next one (base * 2 + 1) - the fraction is gone
+					LayoutOrder = layoutOrder + 1
 				}) library:apply_theme(main_holder, "outline", "BackgroundColor3") 
 
 				path.instance = TextButton 
@@ -7821,9 +7887,11 @@ end)
 						end
 						local newOrder = get_team_sort_order(playerObj)
 						local newNameSort = (string.byte(nameStr:sub(1, 1)) or 0) * 256 + (string.byte(nameStr:sub(2, 2)) or 0)
-						local newLayoutOrder = newOrder * 100000 + newNameSort
-						TextButton.LayoutOrder = newLayoutOrder
-						line.LayoutOrder = newLayoutOrder + 0.5
+						-- round 11: the same unique integer pair as
+						-- create_player (button = base * 2, line = base * 2 + 1)
+						local newBase = newOrder * 100000000 + newNameSort * 1000 + (path.uid or 0)
+						TextButton.LayoutOrder = newBase * 2
+						line.LayoutOrder = newBase * 2 + 1
 					end)
 				end
 				
@@ -7878,18 +7946,27 @@ end)
 					local path = library.playerlist_data[name]
 
 					if path then 
-						local sanity = string.lower(name):match(string.lower(text)) and true or false
-						path.instance.Visible = sanity
-						path.line.Visible = sanity
+						-- round 11: PLAIN find (4th arg = no patterns) - the
+						-- old :match() crashed on pattern characters halfway
+						-- through the loop and left the rest of the rows
+						-- stuck at their old visibility
+						local sanity = string.find(string.lower(name), string.lower(text or ""), 1, true) and true or false
+						if path.instance and path.instance.Parent then path.instance.Visible = sanity end
+						if path.line and path.line.Parent then path.line.Visible = sanity end
 					end 
 				end 
 			end 
 
 			function cfg.remove_player(player) 
-				local path = library.playerlist_data[tostring(player)]
-				path.instance:Destroy() 
-				path.line:Destroy() 
-				path = nil 
+				-- round 11: guarded + the entry is cleared (no stale path
+				-- pointing at destroyed instances)
+				local key = tostring(player)
+				local path = library.playerlist_data[key]
+				if path then
+					if path.instance then pcall(function() path.instance:Destroy() end) end
+					if path.line then pcall(function() path.line:Destroy() end) end
+				end
+				library.playerlist_data[key] = nil
 			end 
 
 			function library.prioritize(text) 
@@ -7970,7 +8047,10 @@ end)
 				Size = dim2(1, 0, 0, 0),
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
-				BackgroundTransparency = 1
+				BackgroundTransparency = 1,
+				-- round 11: the info row sits ON TOP of the section (above the
+				-- search box + the rows - see the playerlist holder)
+				LayoutOrder = -1
 			})
 			library:create("UIPadding", {
 				Parent = icon_row,
@@ -7981,7 +8061,10 @@ end)
 				Parent = icon_row,
 				Name = "",
 				FillDirection = Enum.FillDirection.Horizontal,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
+				-- round 11: TOP, not Center - the pfp + the name / display name /
+				-- user id / team labels stay pinned to the top of the row while
+				-- the action column (kill / gun / orbit ...) grows downward
+				VerticalAlignment = Enum.VerticalAlignment.Top,
 				Padding = dim(0, 6),
 				SortOrder = Enum.SortOrder.LayoutOrder
 			})
