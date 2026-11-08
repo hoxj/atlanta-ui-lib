@@ -387,37 +387,48 @@
 					if frame.Parent:IsA("ScreenGui") and frame.Parent.DisplayOrder ~= 999999 then 
 						library.display_orders += 1
 						frame.Parent.DisplayOrder = library.display_orders
-					end   
+					end  
+
+					-- round 13: the move + release listeners connect NOW and
+					-- disconnect the moment the drag ends - no permanently
+					-- connected no-op listeners on every mouse event
+					local move_conn, end_conn
+					move_conn = uis.InputChanged:Connect(function(input, game_event) 
+						if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+							local viewport_x = camera.ViewportSize.X
+							local viewport_y = camera.ViewportSize.Y
+
+							local current_position = dim2(
+								0,
+								clamp(
+									start_size.X.Offset + (input.Position.X - start.X),
+									0,
+									viewport_x - frame.Size.X.Offset
+								),
+								0,
+								clamp(
+									start_size.Y.Offset + (input.Position.Y - start.Y),
+									0,
+									viewport_y - frame.Size.Y.Offset
+								)
+							)
+
+							frame.Position = current_position
+						end
+					end)
+					end_conn = uis.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 then
+							dragging = false
+							if move_conn then move_conn:Disconnect() move_conn = nil end
+							if end_conn then end_conn:Disconnect() end_conn = nil end
+						end
+					end)
 				end
 			end)
 
 			frame.InputEnded:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.MouseButton1 then
 					dragging = false
-				end
-			end)
-
-			library:connection(uis.InputChanged, function(input, game_event) 
-				if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-					local viewport_x = camera.ViewportSize.X
-					local viewport_y = camera.ViewportSize.Y
-
-					local current_position = dim2(
-						0,
-						clamp(
-							start_size.X.Offset + (input.Position.X - start.X),
-							0,
-							viewport_x - frame.Size.X.Offset
-						),
-						0,
-						clamp(
-							start_size.Y.Offset + (input.Position.Y - start.Y),
-							0,
-							viewport_y - frame.Size.Y.Offset
-						)
-					)
-
-					frame.Position = current_position
 				end
 			end)
 		end
@@ -679,17 +690,27 @@ local function get_config_name_from_path(file)
 					LineJoinMode = Enum.LineJoinMode.Miter
 				})
 
-				cfg.path.MouseEnter:Connect(function()
+				-- round 13: the follow listener only exists while the tooltip
+				-- is actually visible (MouseEnter -> connect, MouseLeave ->
+				-- disconnect) - one live listener per hovered element instead
+				-- of one permanently connected listener per tooltip
+				local tip_move_conn = nil
+                cfg.path.MouseEnter:Connect(function()
 					watermark_outline.Visible = true 
+					if not tip_move_conn then
+						tip_move_conn = uis.InputChanged:Connect(function(input)
+							if watermark_outline.Visible and input.UserInputType == Enum.UserInputType.MouseMovement then
+								watermark_outline.Position = dim_offset(input.Position.X + 10, input.Position.Y + 10)
+							end
+						end)
+					end
 				end)   
 
-				cfg.path.MouseLeave:Connect(function()
+                cfg.path.MouseLeave:Connect(function()
 					watermark_outline.Visible = false 
-				end)
-
-				library:connection(uis.InputChanged, function(input)
-					if watermark_outline.Visible and input.UserInputType == Enum.UserInputType.MouseMovement then
-						watermark_outline.Position = dim_offset(input.Position.X + 10, input.Position.Y + 10)
+					if tip_move_conn then
+						tip_move_conn:Disconnect()
+						tip_move_conn = nil
 					end
 				end)
 			end 
@@ -1706,6 +1727,9 @@ local function get_config_name_from_path(file)
 					position = dim2(0, main_window.items.main_holder.AbsolutePosition.X + main_window.items.main_holder.AbsoluteSize.X + 2, 0, main_window.items.main_holder.AbsolutePosition.Y),
 					image = "rbxassetid://115194686863276",
 				})
+				-- round 13: exposed so the script can anchor the target hud
+				-- below the style window
+				library.style_panel = style
 
 local watermark = library:watermark({
     default = "starkill.cc v1.5.3.2"
@@ -1823,6 +1847,14 @@ end)
 					watermark.set_visible(bool)
 				end})
 				section:dropdown({name = "Watermark Options", flag = "wm_options", items = {"fps", "ping", "executor", "username", "userid"}, default = {"fps", "ping", "executor", "username", "userid"}, multi = true, callback = function(selected) end})
+				-- round 13: the NORMAL notification settings (everything that
+				-- is not a hit / kill notify - arrest notify, config save /
+				-- delete, etc.). Same positions as the hit/kill notifs: left
+				-- = stock, right = mirrored slide, middle = anchored x 900 /
+				-- y 800, stacking upward, fading in / out.
+				section:dropdown({name = "Notif Position", flag = "style_notify_position", items = {"left", "right", "middle"}, default = "left", tooltip = "left = the stock slide in from the left. right = the notif flipped around, slides in from the right side. middle = anchored at x 900 / y 800, stacking upward, and instead of sliding it fades in and out", callback = function(selected) end})
+				section:slider({name = "Notif X", flag = "style_notify_x", min = 0, max = 2000, default = 20, interval = 1, callback = function(selected) end})
+				section:slider({name = "Notif Y", flag = "style_notify_y", min = 0, max = 2000, default = 72, interval = 1, callback = function(selected) end})
 				section:button_holder({})
 				section:button({name = "Copy JobId", callback = function()
 					setclipboard(game.JobId)
@@ -2000,7 +2032,7 @@ end)
 				local holder = library:panel({
 					name = "Playerlist", 
 					anchor_point = vec2(0, 0),
-					size = dim2(0, 529, 0, 445),
+					size = dim2(0, 529, 0, 660),
 					position = dim2(0, main_window.items.main_holder.AbsolutePosition.X - 531, 0, main_window.items.main_holder.AbsolutePosition.Y),
 					image = "rbxassetid://107070078834415",
 				})  
@@ -2062,19 +2094,23 @@ end)
 					})
 				end
 				section:dropdown({name = "Priority color elements", flag = "ESP_PRIORITY_ELEMENTS", items = {"Box", "Box Fill", "Name", "Distance", "Tool", "Health Bar", "Health Text", "Tracer", "Flags", "Highlight", "Mesh Chams", "Glow"}, default = {"Name"}, multi = true, scrolling = true, callback = function(selected) end})
-				-- round 6: 2x2 action grid (target / view / tp / kill)
+				-- round 13: the view / tp / target buttons - a
+				-- 3-up row in the MIDDLE, between the info box
+				-- (above) and the targeting section (below).
+				-- They no longer live inside the info box's
+				-- actions column.
 				local actionGrid = library:create("Frame", {
-					Parent = section.holder,
+					Parent = main_holder,
 					Name = "action_grid",
-					Size = dim2(1, -8, 0, 0),
+					Size = dim2(1, -8, 0, 18),
 					BackgroundTransparency = 1,
-					AutomaticSize = Enum.AutomaticSize.Y
+					LayoutOrder = 2
 				})
 				library:create("UIGridLayout", {
 					Parent = actionGrid,
 					Name = "",
 					FillDirection = Enum.FillDirection.Horizontal,
-					CellSize = dim2(0.5, -5, 0, 18),
+					CellSize = dim2(0.333, -5, 0, 18),
 					CellPadding = dim2(0, 6, 0, 4),
 					SortOrder = Enum.SortOrder.LayoutOrder
 				})
@@ -2145,15 +2181,58 @@ end)
 						end)
 					end)
 				end})
-				gridHost:button({name = "kill", callback = function()
+
+				-- round 13: the TARGETING section - a real
+				-- multi_section (subtab support, like the
+				-- silent aim / triggerbot / checks one) below
+				-- the button row. First subtab "kill", second
+				-- subtab "arrest".
+				local targetTitle = library:create("TextLabel", {
+					Parent = main_holder,
+					Name = "targeting",
+					FontFace = library.font,
+					TextColor3 = themes.preset.text,
+					BorderColor3 = rgb(0, 0, 0),
+					Text = "targeting",
+					BackgroundTransparency = 1,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					Size = dim2(1, -8, 0, 12),
+					LayoutOrder = 3,
+					TextSize = 12,
+					BackgroundColor3 = rgb(255, 255, 255)
+				})
+				library:create("UIStroke", {
+					Parent = targetTitle,
+					Name = "",
+					LineJoinMode = Enum.LineJoinMode.Miter
+				})
+				local targetWrap = setmetatable({ holder = main_holder }, { __index = library })
+				local killSec, arrestSec = targetWrap:multi_section({names = {"kill", "arrest"}})
+				-- round 13: the playerlist holder has no fixed height (its
+				-- canvas auto-sizes), so the multi_section outer frame gets
+				-- an explicit inline height - otherwise its 1,0,1,0 size
+				-- resolves against a 0-height parent and collapses
+				do
+					local tFrame = killSec and killSec.holder
+					for _ = 1, 4 do
+						if tFrame then tFrame = tFrame.Parent end
+					end
+					if tFrame and tFrame:IsA("Frame") then
+						tFrame.LayoutOrder = 4
+						tFrame.Size = dim2(1, 0, 0, 170)
+					end
+				end
+
+				-- ===== kill subtab =====
+				killSec:button({name = "kill", callback = function()
 					if not library.selected_player then return end
-					-- round 6: the script side (KillEngine) provides this
+					-- the script side (KillEngine) provides this
 					if library.on_kill_request then
 						library.on_kill_request(library.selected_player)
 					end
 				end})
 
-				-- round 6: gun for kill - every gun in the game (live scan of
+				-- gun for kill - every gun in the game (live scan of
 				-- ReplicatedStorage.Tools + the auto equip gun list + m700 /
 				-- revolver), so the list always matches the real tool names
 				local gunItems = {}
@@ -2190,15 +2269,43 @@ end)
 				-- round 7: orbit_speed uses juju's exact strafe semantics -
 				-- the "%" slider from the da hood script (1-100, default 75)
 				-- round 9: follow mode - underground / above / behind
+				-- round 13: orbit speed caps at the value-20 speed (see the
+				-- script-side cap) - 20 is the fastest readable spin
 				library.kill_settings = { gun = "AK-47", orbit_speed = 75, orbit_distance = 8, follow_mode = "underground" }
-				section:dropdown({name = "gun", flag = "KILL_GUN", items = gunItems, default = "AK-47", tooltip = "gun used by the kill button (auto equipped on the selected target)", callback = function(v) library.kill_settings.gun = v end})
-				section:dropdown({name = "follow mode", flag = "KILL_FOLLOW_MODE", items = {"underground", "above", "behind"}, default = "underground", tooltip = "underground = the strafe ring 8 studs under the target. above = the ring 8 studs over the target. behind = a fixed spot 5 studs behind the target's back, facing them", callback = function(v) library.kill_settings.follow_mode = v end})
-				section:slider({name = "orbit speed", min = 1, max = 100, default = 75, interval = 1, suffix = " %", flag = "KILL_ORBIT_SPEED", tooltip = "juju strafe speed: the spoofed hrp sweeps this many full revolutions per second around the target (75 = the classic da hood strafe ring) - underground / above modes only", callback = function(v) library.kill_settings.orbit_speed = v end})
-				section:slider({name = "orbit distance", min = 4, max = 30, default = 8, interval = 1, suffix = " studs", flag = "KILL_ORBIT_DIST", tooltip = "how far the spoofed hrp orbits from the target (underground / above modes only)", callback = function(v) library.kill_settings.orbit_distance = v end})
-				section.holder = main_holder
+				killSec:dropdown({name = "gun", flag = "KILL_GUN", items = gunItems, default = "AK-47", tooltip = "gun used by the kill button (auto equipped on the selected target)", callback = function(v) library.kill_settings.gun = v end})
+				killSec:dropdown({name = "follow mode", flag = "KILL_FOLLOW_MODE", items = {"underground", "above", "behind"}, default = "underground", tooltip = "underground = the strafe ring under the target, body sunk + rolled sideways. above = the ring 8 studs over the target. behind = a fixed spot 5 studs behind the target's back, facing them", callback = function(v) library.kill_settings.follow_mode = v end})
+				killSec:slider({name = "orbit speed", min = 1, max = 100, default = 75, interval = 1, suffix = " %", flag = "KILL_ORBIT_SPEED", tooltip = "juju strafe speed: how fast the ring sweeps around the target. 20 is the fastest readable spin - anything above 20 is capped to the 20 speed (higher values only aliased / looked slower)", callback = function(v) library.kill_settings.orbit_speed = v end})
+				killSec:slider({name = "orbit distance", min = 4, max = 30, default = 8, interval = 1, suffix = " studs", flag = "KILL_ORBIT_DIST", tooltip = "how far the spoofed hrp orbits from the target (underground / above modes only)", callback = function(v) library.kill_settings.orbit_distance = v end})
+
+				-- ===== arrest subtab (round 13) =====
+				-- the script side (ArrestEngine) provides
+				-- library.on_arrest_request
+				arrestSec:button({name = "arrest", callback = function()
+					if not library.selected_player then return end
+					if library.on_arrest_request then
+						library.on_arrest_request(library.selected_player)
+					end
+				end})
+				library.arrest_settings = { follow_mode = "behind", taze_first = false }
+				arrestSec:dropdown({name = "follow mode", flag = "ARREST_FOLLOW_MODE", items = {"behind", "above", "underground"}, default = "behind", tooltip = "where the arrest teleport puts you: behind = 3.5 studs behind the target's back. above = 5 studs over them. underground = sunk + rolled sideways right under them (nothing to shoot at)", callback = function(v) library.arrest_settings.follow_mode = v end})
+				arrestSec:toggle({name = "taze first", flag = "ARREST_TAZE_FIRST", default = false, tooltip = "on the teleport the taser is equipped and fired at the target first - only once they are Tased is the arrest invoked (running / speedhacking targets get predicted either way)", callback = function(v) library.arrest_settings.taze_first = v end})
+				-- round 13: the ESP colorpickers sit BELOW the targeting
+				-- section now (the info box + buttons + targeting section
+				-- own the top of the panel)
+				local espColorsRow = library:create("Frame", {
+					Parent = main_holder,
+					Name = "esp_colors",
+					Size = dim2(1, 0, 0, 0),
+					AutomaticSize = Enum.AutomaticSize.Y,
+					BorderSizePixel = 0,
+					BackgroundTransparency = 1,
+					LayoutOrder = 5
+				})
+				section.holder = espColorsRow
 				section:button_holder({})
 				section:colorpicker({name = "Enemy ESP color", flag = "ESP_Enemy_Color", color = hex("ff0a1f"), callback = function(c) end})
 				section:colorpicker({name = "Friendly ESP color", flag = "ESP_Friendly_Color", color = hex("23ff0a"), callback = function(c) end})
+				section.holder = main_holder
 			--  
 
 			-- round 9: spotify player (vape V4 Render/Spotify.lua port)
@@ -3524,7 +3631,9 @@ end)
 						-- headroom above the head
 						local charPos = Vector3.new(0, 0, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 0.8, 1.4), Vector3.new(0, 0.3, -6))
+						-- round 13: zoomed in a bit - the camera moved closer
+						-- (z 1.4 -> 0, same height + aim point, ~20% bigger body)
+						items.camera.CFrame = cfr(Vector3.new(0, 0.8, 0), Vector3.new(0, 0.3, -6))
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -4242,15 +4351,50 @@ end)
 			return setmetatable(cfg, library)
 		end
 
+		-- round 13: the per-group notification layout. hit/kill notifs read
+		-- the hitnotify section's settings (notify_position + notify_x /
+		-- notify_y), everything else reads the style window's
+		-- (style_notify_position + style_notify_x / style_notify_y).
+		-- left = the stock slide from the left; right = mirrored (slides in
+		-- from the right edge); middle = anchored at x 900 / y 800, stacking
+		-- upward, fading in / out instead of sliding.
+		local function notif_layout(group)
+			local pos, base_x, base_y
+			if group == "hitkill" then
+				pos = string.lower(tostring(flags["notify_position"] or "left"))
+				base_x = tonumber(flags["notify_x"]) or 20
+				base_y = tonumber(flags["notify_y"]) or 72
+			else
+				pos = string.lower(tostring(flags["style_notify_position"] or "left"))
+				base_x = tonumber(flags["style_notify_x"]) or 20
+				base_y = tonumber(flags["style_notify_y"]) or 72
+			end
+			if pos == "middle" then
+				return "middle", 900, 800, -1
+			elseif pos == "right" then
+				return "right", base_x, base_y, 1
+			end
+			return "left", base_x, base_y, 1
+		end
+
 		function library:refresh_notifications()  	
+			-- round 13: offsets are counted PER GROUP now (hitkill and normal
+			-- notifs stack independently)
+			local counts = {}
 			for _, notif in next, library.notifications do 
 				local idx = table.find(library.notifications, notif)
 				if idx then
-					local dir = (flags["notify_invert"] and -1 or 1)
-					local base_y = flags["notify_y"] or 72
-					local base_x = flags["notify_x"] or 20
-					local offset = (idx - 1) * 28 * dir
-					tween_service:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Position = dim2(0, base_x, 0, base_y + offset)}):Play()
+					local group = notif:GetAttribute("notif_group") or "normal"
+					local mode, base_x, base_y, dir = notif_layout(group)
+					counts[group] = (counts[group] or 0) + 1
+					local offset = (counts[group] - 1) * 28 * dir
+					local pos
+					if mode == "right" then
+						pos = dim2(1, -base_x, 0, base_y + offset)
+					else
+						pos = dim2(0, base_x, 0, base_y + offset)
+					end
+					tween_service:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Exponential, Enum.EasingDirection.InOut), {Position = pos}):Play()
 				end
 			end     
 		end
@@ -4265,23 +4409,46 @@ end)
 				font_enum = properties.font_enum or nil,
 			}
 		
-			local dir = (flags["notify_invert"] and -1 or 1)
-			local base_y = flags["notify_y"] or 72
-			local base_x = flags["notify_x"] or 20
-			local offset = (#library.notifications * 28) * dir
+			-- round 13: the group ("hitkill" = the hitnotify section's
+			-- settings, normal = the style window's) + the per-mode layout
+			local group = (properties.group == "hitkill") and "hitkill" or "normal"
+			local mode, base_x, base_y, dir = notif_layout(group)
+			local count = 0
+			for _, n in next, library.notifications do
+				if (n:GetAttribute("notif_group") or "normal") == group then
+					count = count + 1
+				end
+			end
+			local offset = count * 28 * dir
 
 			-- Instances
+				-- round 13: left starts anchored (1,0) at base_x (off-screen
+				-- left, slides right in); right starts anchored (0,0) at the
+				-- right edge offset (off-screen right, slides left in);
+				-- middle sits at 900/800 with no slide (it fades, FIX 30c)
+				local startPos, startAnchor
+				if mode == "right" then
+					startPos = dim2(1, -base_x, 0, base_y + offset)
+					startAnchor = Vector2.new(0, 0)
+				elseif mode == "middle" then
+					startPos = dim2(0, base_x, 0, base_y + offset)
+					startAnchor = Vector2.new(0, 0)
+				else
+					startPos = dim2(0, base_x, 0, base_y + offset)
+					startAnchor = Vector2.new(1, 0)
+				end
 				local watermark_outline = library:create("Frame", {
 					Parent = notif_holder,
 					Name = "",
 					Size = UDim2.new(0, 0, 0, 24),
 					BorderColor3 = rgb(0, 0, 0),
 					BorderSizePixel = 0,
-					Position = UDim2.new(0, base_x, 0, base_y + offset),
+					Position = startPos,
 					AutomaticSize = Enum.AutomaticSize.X,
 					BackgroundColor3 = themes.preset.outline,
-					AnchorPoint = Vector2.new(1, 0)
+					AnchorPoint = startAnchor
 				})
+				watermark_outline:SetAttribute("notif_group", group)
 			
 				local watermark_inline = library:create("Frame", {
 					Parent = watermark_outline,
@@ -4381,7 +4548,37 @@ end)
 
 				library:refresh_notifications()
 
-				tween_service:Create(watermark_outline, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {AnchorPoint = Vector2.new(0, 0)}):Play()
+				-- round 13: middle = FADE IN (no slide); right = the mirrored
+				-- slide from the right; left = the stock slide
+				if mode == "middle" then
+					watermark_outline.AnchorPoint = Vector2.new(0, 0)
+					local function notifSetTransparency(t)
+						watermark_outline.BackgroundTransparency = t
+						for _, v in next, watermark_outline:GetDescendants() do 
+							if v:IsA("TextLabel") then 
+								v.TextTransparency = t
+							elseif v:IsA("Frame") then 
+								v.BackgroundTransparency = t
+							end 
+						end 
+					end
+					notifSetTransparency(1)
+					local fadeIn = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+					task.spawn(function()
+						task.wait()
+						tween_service:Create(watermark_outline, fadeIn, {BackgroundTransparency = 0}):Play()
+						for _, v in next, watermark_outline:GetDescendants() do 
+							if v:IsA("TextLabel") then 
+								tween_service:Create(v, fadeIn, {TextTransparency = 0}):Play()
+							elseif v:IsA("Frame") then 
+								tween_service:Create(v, fadeIn, {BackgroundTransparency = 0}):Play()
+							end 
+						end 
+					end)
+				else
+					local slideTo = (mode == "right") and Vector2.new(1, 0) or Vector2.new(0, 0)
+					tween_service:Create(watermark_outline, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {AnchorPoint = slideTo}):Play()
+				end
 				
 				tween_service:Create(accent_bottom, TweenInfo.new(cfg.time, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(1, -4, 0, 1)}):Play()
 			--
@@ -4391,7 +4588,17 @@ end)
 
 				library.notifications[index] = nil
 
-				tween_service:Create(watermark_outline, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1}):Play()
+				-- round 13: middle keeps its anchor and just fades out; right
+				-- slides back out to the right; left slides out left (stock)
+				local outAnchor
+				if mode == "middle" then
+					outAnchor = Vector2.new(0, 0)
+				elseif mode == "right" then
+					outAnchor = Vector2.new(0, 0)
+				else
+					outAnchor = Vector2.new(1, 0)
+				end
+				tween_service:Create(watermark_outline, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {AnchorPoint = outAnchor, BackgroundTransparency = 1}):Play()
 				
 				for _, v in next, watermark_outline:GetDescendants() do 
 					if v:IsA("TextLabel") then 
@@ -5124,22 +5331,31 @@ end)
 			end
 
 			if not cfg.input_disabled then 
-				library:connection(uis.InputChanged, function(input)
-					if cfg.dragging and input.UserInputType == Enum.UserInputType.MouseMovement then 
-						local size_x = (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
-						local value = ((cfg.max - cfg.min) * size_x) + cfg.min
-						cfg.set(value)
-					end
-				end)
-
-				library:connection(uis.InputEnded, function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						cfg.dragging = false 
-					end 
-				end)
-
+				-- round 13: the move + release listeners connect on press and
+				-- disconnect on release - no permanently connected no-op
+				-- listeners per slider
+				local move_conn, end_conn
+				local function end_slider_drag()
+					cfg.dragging = false
+					if move_conn then move_conn:Disconnect() move_conn = nil end
+					if end_conn then end_conn:Disconnect() end_conn = nil end
+				end
 				slider.MouseButton1Down:Connect(function()
 					cfg.dragging = true
+					if not move_conn then
+						move_conn = uis.InputChanged:Connect(function(input)
+							if cfg.dragging and input.UserInputType == Enum.UserInputType.MouseMovement then 
+								local size_x = (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
+								local value = ((cfg.max - cfg.min) * size_x) + cfg.min
+								cfg.set(value)
+							end 
+						end)
+						end_conn = uis.InputEnded:Connect(function(input)
+							if input.UserInputType == Enum.UserInputType.MouseButton1 then
+								end_slider_drag()
+							end 
+						end)
+					end
 				end)
 			end
 
@@ -5948,31 +6164,46 @@ end)
 				cfg.set(nil, nil)
 			end
 			
+			-- round 13: the move + release listeners connect on the first
+			-- picker press and disconnect on release - no permanently
+			-- connected no-op listeners per colorpicker
+			local cp_move_conn, cp_end_conn = nil, nil
+			local function cp_end_drag()
+				dragging_sat = false
+				dragging_hue = false
+				dragging_alpha = false
+				if cp_move_conn then cp_move_conn:Disconnect() cp_move_conn = nil end
+				if cp_end_conn then cp_end_conn:Disconnect() cp_end_conn = nil end
+			end
+			local function cp_begin_drag()
+				if not cp_move_conn then
+					cp_move_conn = uis.InputChanged:Connect(function(input)
+						if (dragging_sat or dragging_hue or dragging_alpha) and input.UserInputType == Enum.UserInputType.MouseMovement then
+							cfg.update_color() 
+						end
+					end)
+					cp_end_conn = uis.InputEnded:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 then
+							cp_end_drag()
+						end
+					end)
+				end
+			end
+
 			alpha.MouseButton1Down:Connect(function()
 				dragging_alpha = true 
+				cp_begin_drag()
 			end)
 
 			hue.MouseButton1Down:Connect(function()
 				dragging_hue = true 
+				cp_begin_drag()
 			end)
 
 			sat.MouseButton1Down:Connect(function()
 				dragging_sat = true  
+				cp_begin_drag()
 			end)
-
-			uis.InputEnded:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					dragging_sat = false
-					dragging_hue = false
-					dragging_alpha = false 
-				end
-			end)
-
-			uis.InputChanged:Connect(function(input)
-				if (dragging_sat or dragging_hue or dragging_alpha) and input.UserInputType == Enum.UserInputType.MouseMovement then
-					cfg.update_color() 
-				end
-			end)	
 
 			task.spawn(function()
 				while true do 
@@ -7158,7 +7389,9 @@ end)
 				default = options.default,
 				flag = options.flag or "SET ME NIGGA",
 				callback = options.callback or function() end,
-				visible = options.visible or true,
+				-- round 13: a real false now survives (the `or true` made
+				-- every textbox visible on execute)
+				visible = (options.visible ~= nil) and options.visible or true,
 			}
 			
 			-- instances 
