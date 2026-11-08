@@ -3517,13 +3517,14 @@ end)
 					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
-						-- round 11: the body moves DOWN (was y 2 - the body
-						-- sat high and clipped the top of the viewport; y 0
-						-- centers it), the esp overlay follows (dynamic box
-						-- wraps it, the static box is centered on it)
+						-- round 12: the body is properly centered and nothing
+						-- clips (not even tall hats): the camera sits a little
+						-- higher + further back and aims slightly below the
+						-- root, so the whole body lands mid-viewport with
+						-- headroom above the head
 						local charPos = Vector3.new(0, 0, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						items.camera.CFrame = cfr(Vector3.new(0, 0, 0), Vector3.new(0, 0, -6))
+						items.camera.CFrame = cfr(Vector3.new(0, 0.8, 1.4), Vector3.new(0, 0.3, -6))
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -3570,10 +3571,32 @@ end)
 							cfg.objects["holder"].Size = UDim2.fromOffset(sizeX, sizeY)
 							cfg.objects["holder"].Position = UDim2.fromOffset(math.floor(minV.X - padding), math.floor(minV.Y - padding))
 						else
+							-- round 12: the STATIC box follows the body now. It is
+							-- centered on the projected ROOT PART (the same anchor
+							-- the real esp renderer uses for its fixed-size box),
+							-- not on the viewport - so the box, the name row, the
+							-- team flag and every bar move with the body instead of
+							-- sitting over it like a wall
 							cfg.objects["holder"].Size = UDim2.fromOffset(110, 150)
-							local vpX = items.viewportframe.AbsoluteSize.X
-							local vpY = items.viewportframe.AbsoluteSize.Y
-							cfg.objects["holder"].Position = UDim2.fromOffset(math.floor((vpX - 110) / 2), math.floor((vpY - 150) / 2))
+							local camCF = items.camera.CFrame
+							local camPos = camCF.Position
+							local lookDir = camCF.LookVector
+							local rightVec = camCF.RightVector
+							local upVec = camCF.UpVector
+							local vpSize = items.viewportframe.AbsoluteSize
+							local focalLength = (vpSize.Y / 2) / math.tan(math.rad(items.camera.FieldOfView / 2))
+							local rp = character:FindFirstChild("HumanoidRootPart")
+							if rp then
+								local rel = rp.Position - camPos
+								local cz = rel:Dot(lookDir)
+								if cz > 0 then
+									local cx = rel:Dot(rightVec)
+									local cy = rel:Dot(upVec)
+									local sx = (cx / cz) * focalLength + (vpSize.X / 2)
+									local sy = -(cy / cz) * focalLength + (vpSize.Y / 2)
+									cfg.objects["holder"].Position = UDim2.fromOffset(math.floor(sx - 55), math.floor(sy - 75))
+								end
+							end
 						end
 						
 						local teamCol = lp.Team and lp.Team.TeamColor and lp.Team.TeamColor.Color or rgb(255, 255, 255)
@@ -7604,10 +7627,12 @@ end)
 					TextYAlignment = Enum.TextYAlignment.Top,
 					TextSize = 12,
 					BackgroundColor3 = rgb(255, 255, 255),
-					-- round 11: the info row (LayoutOrder -1) goes ON TOP, the
-					-- search box stays at 0, the rows drop to 2 - the info box
-					-- can never slide below the list again
-					LayoutOrder = 2
+					-- round 12: the LIST BOX is FIRST (order 0) -
+					-- the info row (FIX 14b) sits directly BELOW it,
+					-- on the same level as the priority stuff. It is
+					-- no longer on top of the list (round 11 had it
+					-- at -1, over the panel).
+					LayoutOrder = 0
 				})
 				
 				local UIPadding = library:create("UIPadding", {
@@ -8048,9 +8073,13 @@ end)
 				AutomaticSize = Enum.AutomaticSize.Y,
 				BorderSizePixel = 0,
 				BackgroundTransparency = 1,
-				-- round 11: the info row sits ON TOP of the section (above the
-				-- search box + the rows - see the playerlist holder)
-				LayoutOrder = -1
+				-- round 12: the info row sits directly BELOW the actual
+				-- playerlist box (order 1, right after the list at 0) -
+				-- not over it. The priority controls (the actions column)
+				-- live inside this same row on the right, so the pfp +
+				-- username / display name / team (left) and the priority
+				-- stuff (right) share the same level.
+				LayoutOrder = 1
 			})
 			library:create("UIPadding", {
 				Parent = icon_row,
