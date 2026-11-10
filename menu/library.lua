@@ -2161,7 +2161,7 @@ end)
 						end)
 					end
 				end})
-				gridHost:button({name = "tp", callback = function()
+				gridHost:button({name = "teleport", callback = function()
 					if not library.selected_player or not lp.Character then return end
 					local p = players:FindFirstChild(library.selected_player)
 					if not p or not p.Character then return end
@@ -2224,7 +2224,14 @@ end)
 				end
 
 				-- ===== kill subtab =====
-				killSec:button({name = "kill", callback = function()
+				-- round 14: the buttons parent through a current_holder host -
+				-- library:button parents to self.current_holder and the
+				-- multi_section tabs only carry .holder, so the round 13 buttons
+				-- were created with Parent = nil and never rendered (the targeting
+				-- section showed the dropdowns / sliders but NO buttons - those use
+				-- .holder and worked)
+				local killBtnHost = setmetatable({ current_holder = killSec.holder }, { __index = library })
+				killBtnHost:button({name = "kill", callback = function()
 					if not library.selected_player then return end
 					-- the script side (KillEngine) provides this
 					if library.on_kill_request then
@@ -2278,9 +2285,9 @@ end)
 				killSec:slider({name = "orbit distance", min = 4, max = 30, default = 8, interval = 1, suffix = " studs", flag = "KILL_ORBIT_DIST", tooltip = "how far the spoofed hrp orbits from the target (underground / above modes only)", callback = function(v) library.kill_settings.orbit_distance = v end})
 
 				-- ===== arrest subtab (round 13) =====
-				-- the script side (ArrestEngine) provides
-				-- library.on_arrest_request
-				arrestSec:button({name = "arrest", callback = function()
+				-- round 14: same current_holder host as the kill button (FIX 17a)
+				local arrestBtnHost = setmetatable({ current_holder = arrestSec.holder }, { __index = library })
+				arrestBtnHost:button({name = "arrest", callback = function()
 					if not library.selected_player then return end
 					if library.on_arrest_request then
 						library.on_arrest_request(library.selected_player)
@@ -3631,9 +3638,12 @@ end)
 						-- headroom above the head
 						local charPos = Vector3.new(0, 0, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						-- round 13: zoomed in a bit - the camera moved closer
-						-- (z 1.4 -> 0, same height + aim point, ~20% bigger body)
-						items.camera.CFrame = cfr(Vector3.new(0, 0.8, 0), Vector3.new(0, 0.3, -6))
+						-- round 14: pulled back + recentered. Round 13's zoom put tall
+						-- avatars' feet right on the bottom edge of the viewport - the
+						-- "invisible wall" that cut the lower legs off. The camera sits
+						-- higher + further back and aims at the body's vertical center:
+						-- feet to hat fits with margins on every avatar
+						items.camera.CFrame = cfr(Vector3.new(0, 1.2, 2), Vector3.new(0, 0.25, -6))
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -6440,6 +6450,40 @@ end)
 					LineJoinMode = Enum.LineJoinMode.Miter
 				})
 				
+				-- round 14: a separator line + a "remove" option below
+				-- hold / toggle / always. Clicking it clears the keybind (key back
+				-- to "none", the label back to "Set", off the keybind list - the
+				-- mode is untouched)
+				local remove_separator = library:create("Frame", {
+					Parent = keybind_selector,
+					Name = "",
+					Size = dim2(1, 0, 0, 1),
+					BorderSizePixel = 0,
+					ZIndex = 2,
+					BackgroundColor3 = themes.preset.inline
+				}) library:apply_theme(remove_separator, "inline", "BackgroundColor3")
+				
+				local remove_button = library:create("TextButton", {
+					Parent = keybind_selector,
+					Name = "",
+					FontFace = library.font,
+					TextColor3 = themes.preset.text,
+					BorderColor3 = rgb(0, 0, 0),
+					Text = "remove",
+					BackgroundTransparency = 1,
+					AutomaticSize = Enum.AutomaticSize.XY,
+					BorderSizePixel = 0,
+					ZIndex = 2,
+					TextSize = 12,
+					BackgroundColor3 = rgb(255, 255, 255)
+				})
+				
+				library:create("UIStroke", {
+					Parent = remove_button,
+					Name = "",
+					LineJoinMode = Enum.LineJoinMode.Miter
+				})
+				
 				local UIGradient = library:create("UIGradient", {
 					Parent = keybind_selector,
 					Name = "",
@@ -6573,6 +6617,17 @@ end)
 
 				always_button.MouseButton1Click:Connect(function()
 					cfg.set_mode("always") 
+					cfg.set_visible(false)
+					cfg.open = false 
+				end) 
+				
+				remove_button.MouseButton1Click:Connect(function()
+					-- round 14: clear the bind - key "none", the label back to "Set",
+					-- off the keybind list. cfg.set with a table updates the flag, the
+					-- label text AND the keybind-list entry in one go; "always" mode
+					-- stays on (active true), every other mode goes off
+					cfg.set({key = "none", mode = cfg.mode, active = (cfg.mode == "always") and true or false})
+					cfg.callback(cfg.active or false)
 					cfg.set_visible(false)
 					cfg.open = false 
 				end) 
