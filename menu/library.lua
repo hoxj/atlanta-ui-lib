@@ -3638,12 +3638,11 @@ end)
 						-- headroom above the head
 						local charPos = Vector3.new(0, 0, -6)
 						character:SetPrimaryPartCFrame(cfr(charPos) * angle(0, math.rad(cfg.rotation), 0))
-						-- round 14: pulled back + recentered. Round 13's zoom put tall
-						-- avatars' feet right on the bottom edge of the viewport - the
-						-- "invisible wall" that cut the lower legs off. The camera sits
-						-- higher + further back and aims at the body's vertical center:
-						-- feet to hat fits with margins on every avatar
-						items.camera.CFrame = cfr(Vector3.new(0, 1.2, 2), Vector3.new(0, 0.25, -6))
+						-- round 15: a bit closer - the body reads bigger in the
+						-- preview while the feet-to-hat margins stay safe on
+						-- every avatar (round 14's framing pulled back a full
+						-- stud more than it needed to)
+						items.camera.CFrame = cfr(Vector3.new(0, 1.1, 1.3), Vector3.new(0, 0.25, -6))
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -4542,6 +4541,30 @@ end)
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.accent
 				})
+				
+				-- round 15: the timer bar (accent_bottom) + the accent bar follow the
+				-- position mode:
+				--   middle: NO left accent bar (removed), and the timer bar EXPANDS
+				--           FROM THE CENTER outward - both sides grow at the same
+				--           time
+				--   right:  the accent bar sits on the LEFT (inner) edge, and the
+				--           timer bar runs RIGHT -> LEFT (starts at the right edge,
+				--           ends at the left)
+				--   left:   stock (accent on the left, timer left -> right)
+				if mode == "middle" then
+					accent.Visible = false
+					accent_bottom.AnchorPoint = Vector2.new(0.5, 0)
+					accent_bottom.Position = UDim2.new(0.5, 0, 1, -3)
+					accent_bottom.Size = UDim2.new(0, 0, 0, 1)
+				elseif mode == "right" then
+					accent_bottom.AnchorPoint = Vector2.new(1, 0)
+					accent_bottom.Position = UDim2.new(1, -2, 1, -3)
+					accent_bottom.Size = UDim2.new(0, 0, 0, 1)
+				else
+					accent_bottom.AnchorPoint = Vector2.new(0, 0)
+					accent_bottom.Position = UDim2.new(0, 2, 1, -3)
+					accent_bottom.Size = UDim2.new(0, -4, 0, 1)
+				end
 				
 				local UIGradient = library:create("UIGradient", {
 					Parent = accent,
@@ -6370,11 +6393,17 @@ end)
 					BackgroundColor3 = rgb(255, 255, 255)
 				})
 				
+				-- round 15: NO HorizontalFlex. Flex-Fill on the children of an
+				-- AutomaticSize.XY window is a feedback loop: the flex stretches the
+				-- buttons to the window's width, the window re-sizes to the (now
+				-- wider) buttons, the flex stretches them again - the menu grew
+				-- FOREVER to the right ("the window keeps going on forever,
+				-- stretched to the right side"). Without flex the buttons keep their
+				-- natural width and the window settles at the widest one.
 				library:create("UIListLayout", {
 					Parent = keybind_selector,
 					Name = "",
 					SortOrder = Enum.SortOrder.LayoutOrder,
-					HorizontalFlex = Enum.UIFlexAlignment.Fill,
 					Padding = dim(0, 2)
 				})
 				
