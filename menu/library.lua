@@ -3736,6 +3736,54 @@ end)
 							end
 						end
 						
+						-- round 32: the CORNER BOXES are positioned + toggled every
+						-- frame HERE, not only inside change_health (one error anywhere
+						-- in that function killed the bare task.spawn loop that called
+						-- it, and the corner frames stayed unpositioned at their
+						-- full-parent default - corner mode drew nothing). this is the
+						-- real esp renderer's math: 8 dual-frame segments, corner
+						-- length = 30% of the box width, 1px lines + the 1px black
+						-- outline ring. starkill's round-32 pack drives the same
+						-- frames with identical values - the two never fight.
+						local cornerOn = flag_bool("esp_box") and flags["esp_box_mode"] == "Corner Boxes"
+						for _, name in ipairs({"LeftTop", "LeftSide", "RightTop", "RightSide", "BottomLeft", "BottomDown", "BottomRightSide", "BottomRightDown"}) do
+							local seg = cfg.objects[name]
+							if seg and seg.Main and seg.Outline then
+								if seg.Main.Visible ~= cornerOn then seg.Main.Visible = cornerOn end
+								if seg.Outline.Visible ~= cornerOn then seg.Outline.Visible = cornerOn end
+							end
+						end
+						if cornerOn and cfg.objects["holder"] then
+							local cw = cfg.objects["holder"].Size.X.Offset
+							local chh = cfg.objects["holder"].Size.Y.Offset
+							if cw >= 10 and chh >= 10 then
+								local t = 1
+								local cornerLen = math.floor(cw * 0.3)
+								local cCol = flag_color("esp_box_color")
+								local function cHoriz(seg, x, y, len)
+									seg.Main.Position = UDim2.fromOffset(x, y)
+									seg.Main.Size = UDim2.fromOffset(len, t)
+									seg.Main.BackgroundColor3 = cCol
+									seg.Outline.Position = UDim2.fromOffset(x - 1, y - 1)
+									seg.Outline.Size = UDim2.fromOffset(len + 2, t + 2)
+								end
+								local function cVert(seg, x, y, len)
+									seg.Main.Position = UDim2.fromOffset(x, y)
+									seg.Main.Size = UDim2.fromOffset(t, len)
+									seg.Main.BackgroundColor3 = cCol
+									seg.Outline.Position = UDim2.fromOffset(x - 1, y - 1)
+									seg.Outline.Size = UDim2.fromOffset(t + 2, len + 2)
+								end
+								cHoriz(cfg.objects["LeftTop"], 0, 0, cornerLen)
+								cVert(cfg.objects["LeftSide"], 0, 0, cornerLen)
+								cHoriz(cfg.objects["RightTop"], cw - cornerLen, 0, cornerLen)
+								cVert(cfg.objects["RightSide"], cw - t, 0, cornerLen)
+								cHoriz(cfg.objects["BottomLeft"], 0, chh - t, cornerLen)
+								cVert(cfg.objects["BottomDown"], 0, chh - cornerLen, cornerLen)
+								cHoriz(cfg.objects["BottomRightDown"], cw - cornerLen, chh - t, cornerLen)
+								cVert(cfg.objects["BottomRightSide"], cw - t, chh - cornerLen, cornerLen)
+							end
+						end
 						local teamCol = lp.Team and lp.Team.TeamColor and lp.Team.TeamColor.Color or rgb(255, 255, 255)
 						local teamElems = flags["ESP_TEAM_COLOR_ELEMENTS"] or {}
 						if type(teamElems) == "string" then teamElems = {teamElems} end
