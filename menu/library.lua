@@ -378,11 +378,13 @@
 					start = input.Position
 					start_size = frame.Position
 
-					if library.current_element_open then 
-						library.current_element_open.set_visible(false)
-						library.current_element_open.open = false 
+					-- round 31: nil-safe close (the dropdown's set_visible clears the pointer itself - reading it again indexed nil)
+					local _skClose = library.current_element_open
+					if _skClose then 
 						library.current_element_open = nil 
-					end 
+						pcall(function() _skClose.set_visible(false) end)
+						_skClose.open = false 
+					end
 
 					if frame.Parent:IsA("ScreenGui") and frame.Parent.DisplayOrder ~= 999999 then 
 						library.display_orders += 1
@@ -1337,10 +1339,16 @@ local function get_config_name_from_path(file)
 					tooltip.Visible = false;
 				end 
 
-				if library.current_element_open then 
-					library.current_element_open.set_visible(false)
-					library.current_element_open.open = false 
+				-- round 31: nil-safe close (see set_menu_visibility: some set_visible(false)
+				-- implementations - the dropdown's - clear library.current_element_open
+				-- themselves, so reading it right after crashed with "attempt to index
+				-- nil with 'open'" - loadstring:1342. the element is cached, the pointer
+				-- clears FIRST, the close runs pcall'd)
+				local _skClose = library.current_element_open
+				if _skClose then 
 					library.current_element_open = nil 
+					pcall(function() _skClose.set_visible(false) end)
+					_skClose.open = false 
 				end
 
 				-- round 9: script-side "menu opened" hook (the
@@ -3493,7 +3501,8 @@ end)
 			local props = properties or {}
 			local get_settings = props.get_settings or library.esp_preview_get_settings
 
-			cfg.sk_library_r30 = true -- round 30: the marker starkill checks (the library drives the esp preview now)
+			-- round 31: the round-30 marker is gone with the library-driven
+			-- preview experiment - starkill no longer checks for it
 
 			local character = nil
 			local function build_character()
@@ -3631,10 +3640,10 @@ end)
 				end
 
 				library:connection(run.RenderStepped, function()
-					-- round 30: the task.wait() is gone - the loop runs at full render
-					-- rate again. starkill's r24/29 replacement machinery (capture +
-					-- disconnect this loop, drive the preview from the dispatcher) is
-					-- deleted - the LIBRARY owns the preview motion once more
+					-- round 31: the task.wait() is BACK (the esp preview revert,
+					-- starkill round 31 fix 4) - the loop runs at the stock
+					-- pacing it always had before the round-30 experiment
+					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
 						-- round 12: the body is properly centered and nothing
@@ -3648,20 +3657,11 @@ end)
 						-- preview while the feet-to-hat margins stay safe on
 						-- every avatar (round 14's framing pulled back a full
 						-- stud more than it needed to)
-						
-						-- round 30: the approved body-low framing, on the LIBRARY's own
-
-						-- camera now (the r17/27 starkill-side camera claim is deleted
-
-						-- with round 30): closer in (z -1.1) and aiming higher (0.95) so
-
-						-- the body lands low + big in the viewport - and the element
-
-						-- stack follows automatically, it projects through this same
-
-						-- camera
-
-						items.camera.CFrame = cfr(Vector3.new(0, 0.82, -1.1), Vector3.new(0, 0.95, -6))
+						-- round 31: the body-low framing is GONE (the esp preview
+						-- revert, starkill round 31 fix 4). this is the ORIGINAL
+						-- framing the preview shipped with: the body centered,
+						-- mid-viewport, headroom above the head
+						items.camera.CFrame = cfr(Vector3.new(0, 1.1, 1.3), Vector3.new(0, 0.25, -6))
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -4798,10 +4798,12 @@ end)
 
 				library.current_tab[2].Visible = true 
 
+				-- round 31: nil-safe close (the dropdown's set_visible clears the pointer itself - reading it again indexed nil)
 				if library.current_element_open and library.current_element_open ~= cfg then 
-					library.current_element_open.set_visible(false)
-					library.current_element_open.open = false 
+					local _skClose = library.current_element_open
 					library.current_element_open = nil 
+					pcall(function() _skClose.set_visible(false) end)
+					_skClose.open = false 
 				end
 			end
 			
@@ -5037,10 +5039,12 @@ end)
 						multi_s:open_tab(false)
 					end
 
-					if library.current_element_open then 
-						library.current_element_open.set_visible(false)
-						library.current_element_open.open = false 
+					-- round 31: nil-safe close (the dropdown's set_visible clears the pointer itself - reading it again indexed nil)
+					local _skClose = library.current_element_open
+					if _skClose then 
 						library.current_element_open = nil 
+						pcall(function() _skClose.set_visible(false) end)
+						_skClose.open = false 
 					end
 
 					multi:open_tab(true) 
@@ -5154,10 +5158,12 @@ end)
 			}) library:apply_theme(ScrollingFrame, "accent", "ScrollBarImageColor3") 
 
 			ScrollingFrame:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-				if library.current_element_open then 
-					library.current_element_open.set_visible(false)
-					library.current_element_open.open = false 
-					library.current_element_open = nil
+				-- round 31: nil-safe close (the dropdown's set_visible clears the pointer itself - reading it again indexed nil)
+				local _skClose = library.current_element_open
+				if _skClose then 
+					library.current_element_open = nil 
+					pcall(function() _skClose.set_visible(false) end)
+					_skClose.open = false 
 				end
 			end) 
 
@@ -6163,9 +6169,12 @@ end)
 				colorpicker_holder.Visible = bool
 
 				if bool then 
+					-- round 31: nil-safe close (the dropdown's set_visible clears the pointer itself - reading it again indexed nil)
 					if library.current_element_open and library.current_element_open ~= cfg then 
-						library.current_element_open.set_visible(false)
-						library.current_element_open.open = false 
+						local _skClose = library.current_element_open
+						library.current_element_open = nil 
+						pcall(function() _skClose.set_visible(false) end)
+						_skClose.open = false 
 					end
 
 					library.current_element_open = cfg
@@ -6597,9 +6606,12 @@ end)
 					keybind_selector.Position = dim2(0, element_outline.AbsolutePosition.X + 1, 0, element_outline.AbsolutePosition.Y + 17)
 
 					if bool then 
+						-- round 31: nil-safe close (the dropdown's set_visible clears the pointer itself - reading it again indexed nil)
 						if library.current_element_open and library.current_element_open ~= cfg then 
-							library.current_element_open.set_visible(false)
-							library.current_element_open.open = false 
+							local _skClose = library.current_element_open
+							library.current_element_open = nil 
+							pcall(function() _skClose.set_visible(false) end)
+							_skClose.open = false 
 						end
 
 						library.current_element_open = cfg 
@@ -7147,8 +7159,14 @@ end)
 				if bool then
 					if not cfg.ignore and library.current_element_open and library.current_element_open ~= cfg then
 						pcall(function()
-							library.current_element_open.set_visible(false)
-							library.current_element_open.open = false
+							-- round 31: nil-safe (the closed dropdown clears the
+							-- pointer itself - reading it again errored)
+							local _skClose = library.current_element_open
+							library.current_element_open = nil
+							if _skClose then
+								_skClose.set_visible(false)
+								_skClose.open = false
+							end
 						end)
 					end
 					if not cfg.ignore then
@@ -7166,23 +7184,7 @@ end)
 				if bool then 
 					local function skFitDropdown()
 						dropdown_holder.Size = dim2(0, math.max(dropdown.AbsoluteSize.X, 60), 0, cfg.scrolling and 180 or dropdown_holder.Size.Y.Offset)
-						-- round 24 (reapplied round 30: the newest library dropped it):
-						-- a panel that would drop below the bottom of the screen flips
-						-- ABOVE its button instead of rendering off-screen (it used to
-						-- look like the dropdown never opened while the "+" said "-")
-						local _skPosY = dropdown.AbsolutePosition.Y + 22
-						local _skCam = workspace.CurrentCamera
-						local _skVh = (_skCam and _skCam.ViewportSize.Y) or 1080
-						local _skPaneH = dropdown_holder.AbsoluteSize.Y
-						if _skPaneH <= 0 then _skPaneH = 180 end
-						if _skPosY + _skPaneH > _skVh and dropdown.AbsolutePosition.Y - _skPaneH - 2 >= 0 then
-							_skPosY = dropdown.AbsolutePosition.Y - _skPaneH - 2
-						end
-						dropdown_holder.Position = dim2(0, dropdown.AbsolutePosition.X + 1, 0, _skPosY)
-						-- round 24 (reapplied round 30): force the panel above the whole
-						-- menu (global ZIndex) so a layout / theme pass can never draw it
-						-- behind the window
-						dropdown_holder.ZIndex = 100000
+						dropdown_holder.Position = dim2(0, dropdown.AbsolutePosition.X + 1, 0, dropdown.AbsolutePosition.Y + 22)
 					end
 					skFitDropdown()
 					if dropdown.AbsoluteSize.X <= 0 then
@@ -7288,13 +7290,7 @@ end)
 			end
 
 			dropdown.MouseButton1Click:Connect(function()
-				-- round 24 (reapplied round 30: the newest library reverted this):
-				-- the toggle follows what is ACTUALLY on screen (the panel), not a
-				-- stale cfg.open - fast / double clicks used to leave cfg.open
-				-- flipped against the hidden panel (the "+" turned into "-" but the
-				-- dropdown never opened again)
-				local nowOpen = dropdown_holder.Visible
-				cfg.open = not nowOpen
+				cfg.open = not cfg.open 
 
 				cfg.set_visible(cfg.open)
 
