@@ -3493,8 +3493,6 @@ end)
 			local props = properties or {}
 			local get_settings = props.get_settings or library.esp_preview_get_settings
 
-			cfg.sk_library_r30 = true -- round 30: the marker starkill checks (the library drives the esp preview now)
-
 			local character = nil
 			local function build_character()
 				-- round 6: capture the local player exactly ONCE.
@@ -3631,10 +3629,7 @@ end)
 				end
 
 				library:connection(run.RenderStepped, function()
-					-- round 30: the task.wait() is gone - the loop runs at full render
-					-- rate again. starkill's r24/29 replacement machinery (capture +
-					-- disconnect this loop, drive the preview from the dispatcher) is
-					-- deleted - the LIBRARY owns the preview motion once more
+					task.wait()
 					cfg.rotation = (cfg.rotation or 0) + 0.5
 					if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
 						-- round 12: the body is properly centered and nothing
@@ -3648,20 +3643,7 @@ end)
 						-- preview while the feet-to-hat margins stay safe on
 						-- every avatar (round 14's framing pulled back a full
 						-- stud more than it needed to)
-						
-						-- round 30: the approved body-low framing, on the LIBRARY's own
-
-						-- camera now (the r17/27 starkill-side camera claim is deleted
-
-						-- with round 30): closer in (z -1.1) and aiming higher (0.95) so
-
-						-- the body lands low + big in the viewport - and the element
-
-						-- stack follows automatically, it projects through this same
-
-						-- camera
-
-						items.camera.CFrame = cfr(Vector3.new(0, 0.82, -1.1), Vector3.new(0, 0.95, -6))
+						items.camera.CFrame = cfr(Vector3.new(0, 1.1, 1.3), Vector3.new(0, 0.25, -6))
 						
 						if flag_bool("esp_dynamic_box") then
 							local camCF = items.camera.CFrame
@@ -4172,22 +4154,7 @@ end)
 					local boxWidth = objects["holder"].Size.X.Offset
 					local barWidth = math.max(math.floor(boxWidth * ammoRatio), 1)
 					
-					-- round 30: the Resize Outline toggle honored (moved here from
-
-					
-					-- the deleted starkill-side change_health): ON = the outline
-
-					
-					-- shrinks with the fill, OFF = the outline spans the full box
-
-					
-					-- like the real ESP box outline
-
-					
-					local ammoOutlineW = flag_bool("esp_ammo_bar_resize_outline") and (barWidth + 2) or (boxWidth + 2)
-
-					
-					objects[ "ammobar_holder" ].Size = UDim2.fromOffset(ammoOutlineW, barW + 2)
+					objects[ "ammobar_holder" ].Size = UDim2.fromOffset(barWidth + 2, barW + 2)
 					objects[ "ammobar_holder" ].Position = UDim2.new(0, -1, 1, currentY)
 					objects[ "ammobar_holder" ].Visible = true
 					
