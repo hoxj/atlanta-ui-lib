@@ -7232,7 +7232,23 @@ end)
 				if bool then 
 					local function skFitDropdown()
 						dropdown_holder.Size = dim2(0, math.max(dropdown.AbsoluteSize.X, 60), 0, cfg.scrolling and 180 or dropdown_holder.Size.Y.Offset)
-						dropdown_holder.Position = dim2(0, dropdown.AbsolutePosition.X + 1, 0, dropdown.AbsolutePosition.Y + 22)
+						-- round 24 (reapplied round 32: the newest library dropped it):
+						-- a panel that would drop below the bottom of the screen flips
+						-- ABOVE its button instead of rendering off-screen (it used to
+						-- look like the dropdown never opened while the "+" said "-")
+						local _skPosY = dropdown.AbsolutePosition.Y + 22
+						local _skCam = workspace.CurrentCamera
+						local _skVh = (_skCam and _skCam.ViewportSize.Y) or 1080
+						local _skPaneH = dropdown_holder.AbsoluteSize.Y
+						if _skPaneH <= 0 then _skPaneH = 180 end
+						if _skPosY + _skPaneH > _skVh and dropdown.AbsolutePosition.Y - _skPaneH - 2 >= 0 then
+							_skPosY = dropdown.AbsolutePosition.Y - _skPaneH - 2
+						end
+						dropdown_holder.Position = dim2(0, dropdown.AbsolutePosition.X + 1, 0, _skPosY)
+						-- round 24 (reapplied round 32): force the panel above the whole
+						-- menu (global ZIndex) so a layout / theme pass can never draw it
+						-- behind the window
+						dropdown_holder.ZIndex = 100000
 					end
 					skFitDropdown()
 					if dropdown.AbsoluteSize.X <= 0 then
@@ -7338,7 +7354,13 @@ end)
 			end
 
 			dropdown.MouseButton1Click:Connect(function()
-				cfg.open = not cfg.open 
+				-- round 24 (reapplied round 32: the newest library reverted this):
+				-- the toggle follows what is ACTUALLY on screen (the panel), not a
+				-- stale cfg.open - fast / double clicks used to leave cfg.open
+				-- flipped against the hidden panel (the "+" turned into "-" but the
+				-- dropdown never opened again)
+				local nowOpen = dropdown_holder.Visible
+				cfg.open = not nowOpen
 
 				cfg.set_visible(cfg.open)
 
