@@ -1881,13 +1881,11 @@ end)
 					end 
 				end})
 				section:slider({name = "Max Players", flag = "max_players", min = 0, max = 40, default = 15, interval = 1})
-				-- round 9: spotify player (vape V4 Render/Spotify.lua port)
-				section:button_holder({})
-				section:button({name = "Spotify Player", callback = function()
-					if library.spotify_player and library.spotify_player.toggle then
-						library.spotify_player.toggle()
-					end
-				end})
+				-- round 29: the "Spotify Player" button is REMOVED from the
+				-- style window ("remove the spotify miniplayer button in
+				-- styles window") - starkill ships its own spotify engine +
+				-- dynamic-island button; the library's own player is
+				-- unreachable now
 			-- 
 
 				local holder = library:panel({
@@ -2219,7 +2217,10 @@ end)
 					end
 					if tFrame and tFrame:IsA("Frame") then
 						tFrame.LayoutOrder = 4
-						tFrame.Size = dim2(1, 0, 0, 170)
+						-- round 29: expanded a bit downward (170 -> 205) so the
+						-- kill method dropdown row fits ("expand the section
+						-- where kill and arrest live a bit downward")
+						tFrame.Size = dim2(1, 0, 0, 205)
 					end
 				end
 
@@ -5848,6 +5849,30 @@ end)
 					BorderSizePixel = 0,
 					BackgroundColor3 = themes.preset.outline,
 				}) library:apply_theme(hex_inline, "outline", "BackgroundColor3")
+				-- round 29: the hex input follows the HIGH / LOW CONTRAST colors
+				-- now - a contrast-gradient backing (the exact construction of
+				-- the popup interior) sits under the input field, so changing
+				-- the contrast colors in the style window recolors the hex box
+				-- with everything else ("the input box in colorpicker for hex
+				-- doesnt follow high and low contrast background color")
+				local hex_backing = library:create("Frame", {
+					Parent = hex_inline,
+					Name = "hex_backing",
+					Position = dim2(0, 1, 0, 1),
+					Size = dim2(1, -2, 1, -2),
+					BorderColor3 = rgb(0, 0, 0),
+					BorderSizePixel = 0,
+					ZIndex = 2,
+					BackgroundColor3 = rgb(255, 255, 255),
+				})
+				local hex_grad = library:create("UIGradient", {
+					Parent = hex_backing,
+					Rotation = 90,
+					Color = rgbseq{
+						rgbkey(0, rgb(41, 41, 55)),
+						rgbkey(1, rgb(35, 35, 47))
+					}
+				}) library:apply_theme(hex_grad, "contrast", "Color")
 				local hex_input = library:create("TextBox", {
 					Parent = hex_inline,
 					Name = "hex_input",
@@ -5855,6 +5880,7 @@ end)
 					Size = dim2(1, -2, 1, -2),
 					BorderSizePixel = 0,
 					BackgroundTransparency = 1,
+					ZIndex = 3,
 					FontFace = library.font,
 					TextColor3 = themes.preset.text,
 					TextSize = 11,
@@ -7073,7 +7099,31 @@ end)
 			end 
 
 			function cfg.set_visible(bool) 
-				library.current_element_open = cfg.ignore or cfg
+				-- round 29: the open/close order fixed. the old version
+				-- assigned library.current_element_open BEFORE the
+				-- close-others check (making that branch dead code - two
+				-- popups could be open at once, and the stale pointer
+				-- survived every close: "the + changes to - indacating the
+				-- dropdown is open but it isnt"). now: the others close
+				-- FIRST (pcall'd - a stale element can never abort the
+				-- open), the current pointer only moves on OPEN and clears
+				-- on close, and the popup size + position recompute from
+				-- fresh absolute values every open (with a deferred re-fit
+				-- for the frame where the layout had not settled yet - a
+				-- zero-width popup is never rendered again).
+				if bool then
+					if not cfg.ignore and library.current_element_open and library.current_element_open ~= cfg then
+						pcall(function()
+							library.current_element_open.set_visible(false)
+							library.current_element_open.open = false
+						end)
+					end
+					if not cfg.ignore then
+						library.current_element_open = cfg
+					end
+				elseif not cfg.ignore and library.current_element_open == cfg then
+					library.current_element_open = nil
+				end
 
 				dropdown_holder.Visible = bool
 
@@ -7081,13 +7131,14 @@ end)
 				plus.TextSize = bool and 12 or 8
 
 				if bool then 
-					if library.current_element_open and library.current_element_open ~= cfg and not cfg.ignore then 
-						library.current_element_open.set_visible(false)
-						library.current_element_open.open = false 
+					local function skFitDropdown()
+						dropdown_holder.Size = dim2(0, math.max(dropdown.AbsoluteSize.X, 60), 0, cfg.scrolling and 180 or dropdown_holder.Size.Y.Offset)
+						dropdown_holder.Position = dim2(0, dropdown.AbsolutePosition.X + 1, 0, dropdown.AbsolutePosition.Y + 22)
 					end
-
-					dropdown_holder.Size = dim2(0, dropdown.AbsoluteSize.X, 0, dropdown_holder.Size.Y.Offset)
-					dropdown_holder.Position = dim2(0, dropdown.AbsolutePosition.X + 1, 0, dropdown.AbsolutePosition.Y + 22)                    
+					skFitDropdown()
+					if dropdown.AbsoluteSize.X <= 0 then
+						task.defer(skFitDropdown)
+					end
 				end
 			end
 
