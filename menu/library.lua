@@ -7095,7 +7095,12 @@ end)
 				
 				local inline = library:create("Frame", {
 					Parent = dropdown_holder,
-					Size = dim2(1, -2, 1, 2),
+					-- round 34: 1px inset on EVERY side (was 1,-2,1,+2 - the +2 y
+					-- overhang ran 3px past the holder and covered its outline
+					-- bottom edge: "the bottom outline from the dropdowns
+					-- disappeared"). the holder's outline color now frames the
+					-- popup on all four edges.
+					Size = dim2(1, -2, 1, -2),
 					Name = "inline",
 					Position = dim2(0, 1, 0, 1),
 					BorderColor3 = rgb(0, 0, 0),
@@ -7112,7 +7117,9 @@ end)
 						Name = "background",
 						BackgroundTransparency = 1,
 						Position = dim2(0, 1, 0, 1),
-						Size = dim2(1, -2, 1, 1),
+						-- round 34: same 1px inset (was 1,-2,1,+1 - one more
+						-- overhang past the bottom)
+						Size = dim2(1, -2, 1, -2),
 						ZIndex = 2,
 						BorderSizePixel = 0,
 						BackgroundColor3 = themes.preset.accent
@@ -7128,7 +7135,8 @@ end)
 						TopImage = "rbxassetid://103468666327206",
 						BottomImage = "rbxassetid://103468666327206",
 						Position = dim2(0, 1, 0, 1),
-						Size = dim2(1, -2, 1, 1),
+						-- round 34: same 1px inset (was 1,-2,1,+1)
+						Size = dim2(1, -2, 1, -2),
 						ZIndex = 2,
 						BorderSizePixel = 0,
 						BackgroundColor3 = themes.preset.accent,
@@ -7259,14 +7267,19 @@ end)
 								local content = 0
 								if lay and lay.AbsoluteContentSize.Y > 4 then
 									content = lay.AbsoluteContentSize.Y
-								else
-									local n = #cfg.option_instances
-									local oh = (inst1 and inst1.AbsoluteSize.Y) or 0
-									if oh < 8 then oh = 17 end
-									content = n * oh + math.max(0, n - 1) * 5
-								end
-								h = content + 4
-							end
+						else
+							local n = #cfg.option_instances
+							local oh = (inst1 and inst1.AbsoluteSize.Y) or 0
+							if oh < 8 then oh = 17 end
+							content = n * oh + math.max(0, n - 1) * 5
+						end
+						-- round 34: content + 10 (the option list + the 2+2
+						-- contrast padding + the 1+1 inline inset + the 1+1
+						-- background inset + the 1px outline edge). the old
+						-- +4 was short for the chrome stack, so the chain
+						-- overhung the holder and hid the bottom outline.
+						h = content + 10
+					end
 						end
 						dropdown_holder.Size = dim2(0, math.max(dropdown.AbsoluteSize.X, 60), 0, h)
 						dropdown_holder.Position = dim2(0, dropdown.AbsolutePosition.X + 1, 0, dropdown.AbsolutePosition.Y + 22)
@@ -7390,7 +7403,8 @@ end)
 							content = n * oh + math.max(0, n - 1) * 5
 						end
 						pcall(function()
-							dropdown_holder.Size = dim2(dropdown_holder.Size.X.Scale, dropdown_holder.Size.X.Offset, 0, content + 4)
+							-- round 34: content + 10 (matches skFitDropdown)
+							dropdown_holder.Size = dim2(dropdown_holder.Size.X.Scale, dropdown_holder.Size.X.Offset, 0, content + 10)
 						end)
 					end
 				end
