@@ -107,12 +107,12 @@
 		preset = {
 			["outline"] = hex("#000000"), -- 
 			["inline"] = hex("#202020"), --
-			["accent"] = hex("#b4b4ff"), --
+			["accent"] = hex("#ffffff"), -- round 35: white accent default
 			["high_contrast"] = hex("#121212"),
 			["low_contrast"] = hex("#121212"),
 			["text"] = hex("#B4B4B4"),
 			["text_outline"] = rgb(0, 0, 0),
-			["glow"] = hex("#b4b4ff"), 
+			["glow"] = hex("#ffffff"), -- round 35: white glow default
 		},
 
 		utility = {
@@ -1758,7 +1758,9 @@ task.spawn(function()
             executorName = string.lower(string.split(ex, " ")[1])
         end
         
-        local text = "starkill.cc v1.5.3.2"
+        -- round 35: the version tag rides the 'version' watermark option -
+        -- untick it and only "starkill.cc" shows (the tag is hidden)
+        local text = "starkill.cc"
         local wmOpts = flags["wm_options"] or {}
         if type(wmOpts) ~= "table" then wmOpts = {wmOpts} end
         
@@ -1769,6 +1771,9 @@ task.spawn(function()
             return false
         end
         
+        if has("version") then
+            text = text .. " v1.5.3.2"
+        end
         if has("fps") then
             text = text .. " | " .. fps .. " fps"
         end
@@ -1854,7 +1859,8 @@ end)
 				section:toggle({name = "Watermark", flag = "watermark", default = true, callback = function(bool)
 					watermark.set_visible(bool)
 				end})
-				section:dropdown({name = "Watermark Options", flag = "wm_options", items = {"fps", "ping", "executor", "username", "userid"}, default = {"fps", "ping", "executor", "username", "userid"}, multi = true, callback = function(selected) end})
+				-- round 35: the 'version' option - untick it and the v1.5.3.2 tag is hidden
+				section:dropdown({name = "Watermark Options", flag = "wm_options", items = {"version", "fps", "ping", "executor", "username", "userid"}, default = {"version", "fps", "ping", "executor", "username", "userid"}, multi = true, callback = function(selected) end})
 				-- round 13: the NORMAL notification settings (everything that
 				-- is not a hit / kill notify - arrest notify, config save /
 				-- delete, etc.). Same positions as the hit/kill notifs: left
